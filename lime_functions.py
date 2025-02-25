@@ -1002,12 +1002,20 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
 
         # Create opposite prediction features chart
         if len(opposite_prediction_top_word_features_df) > 0: # Check if there are opposite class word features to avoid errors for robust code
-            opposite_word_features_chart = alt.Chart(opposite_prediction_top_word_features_df).mark_bar().encode(
+            
+            # Modify original DF to get absolute importance scores
+            opposite_df_for_chart = opposite_prediction_top_word_features_df.copy()
+            # Get abs importance scores, for easier plotting in desc order going down from left to rigth on the bar chart
+            opposite_df_for_chart["Importance"] = opposite_df_for_chart["Importance"].abs()
+            # Sort the importance values in desc order
+            opposite_df_for_chart = opposite_df_for_chart.sort_values("Importance", ascending=False)
+
+            opposite_word_features_chart = alt.Chart(opposite_df_for_chart).mark_bar().encode(
                 x=alt.X(
                     "Feature:N",
                     sort=alt.EncodingSortField(
                         field="Importance",
-                        order="ascending" # AScending towards 0
+                        order="descending"
                     ),
                     title="Word Feature",
                     axis=alt.Axis(
