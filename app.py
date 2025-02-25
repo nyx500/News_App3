@@ -220,24 +220,37 @@ with tabs[2]:
     caps_img = plt.imread("all_four_datasets_capitals_bar_chart_real_vs_fake.png")
     st.image(caps_img, caption="Mean number of capital letters in real vs fake news", use_container_width=True)
     st.write("Real news tended to use more capital letters, perhaps due to including more proper nouns and technical acronyms.")
-    
-    # Third Person Pronoun Usage
-    st.subheader("Third Person Pronoun Usage")
-    pronouns_img = plt.imread("all_four_datasets_third_person_pronouns_bar_chart_real_vs_fake.png")
-    st.image(pronouns_img, caption="Frequency of third-person pronouns in real vs fake news", use_container_width=True)
-    st.write("Fake news often uses more third-person pronouns (e.g him, his, her), which could indciate a more 'storytelling' kind of narrative style.")
 
     # Exclamation Point Usage
     st.subheader("Exclamation Point Usage")
     exclaim_img = plt.imread("all_four_datasets_exclamation_points_bar_chart_real_vs_fake.png")
     st.image(exclaim_img, caption="Frequency of exclamation points in real vs fake news", use_container_width=True)
     st.write("Fake news tends to use more exclamation points, possibly suggesting a more sensational and inflammatory writing.")
+
+    # Third-Person Pronoun Usage
+    st.subheader("Third Person Pronoun Usage")
+    pronouns_img = plt.imread("all_four_datasets_third_person_pronouns_bar_chart_real_vs_fake.png")
+    st.image(pronouns_img, caption="Frequency of third-person pronouns in real vs fake news", use_container_width=True)
+    st.write("Fake news often uses more third-person pronouns (e.g him, his, her), which could indciate a more 'storytelling' kind of narrative style.")
     
     # Emotion counts
     st.subheader("Emotional Content using NRC Emotion Lexicon")
     emotions_img = plt.imread("all_four_datasets_emotions_bar_chart_real_vs_fake.png")
     st.image(emotions_img, caption="Emotional content comparison between real and fake news", use_container_width=True)
     st.write("Fake news (in this dataset) often showed lower positive emotion scores and fewer trust-based emotion words than real news.")
+
+    # Named Entity PERSON counts
+    st.subheader("Named Entity PERSON Frequency Counts")
+    emotions_img = plt.imread("all_four_datasets_person_named_entities_bar_chart_real_vs_fake.png")
+    st.image(emotions_img, caption="PERSON named entity count for fake vs real news", use_container_width=True)
+    st.write("Fake news (in this dataset) often showed more references to PERSON named entities than real news.")
+
+    # Named Entity CARDINAL counts
+    st.subheader("Named Entity CARDINAL (i.e. numbers) Frequency Counts")
+    emotions_img = plt.imread("all_four_datasets_cardinal_named_entities_bar_chart_real_vs_fake.png")
+    st.image(emotions_img, caption="CARDINAL (numbers) named entity count for fake vs real news", use_container_width=True)
+    st.write("Fake news referred to less numerical data (i.e. lower CARDINAL named entity frequencies) than real news.")
+
 
     # Add an expander with more detailed explanation
     with st.expander("📊 Details about these visualizations"):
