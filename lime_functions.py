@@ -1007,7 +1007,7 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
                     "Feature:N",
                     sort=alt.EncodingSortField(
                         field="Importance",
-                        order="descending"
+                        order="ascending" # AScending towards 0
                     ),
                     title="Word Feature",
                     axis=alt.Axis(
