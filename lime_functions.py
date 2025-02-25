@@ -934,7 +934,9 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
         )
 
         # Filter to show the words that pushed the classifier towards the main prediction (positive word scores)
-        filtered_word_features_df = word_features_df[word_features_df["Importance"] > 0].copy()
+        main_prediction_filtered_word_features_df = word_features_df[word_features_df["Importance"] > 0].copy()
+        # Get words pushing towards the opposite class
+        opposite_prediction_filtered_word_features_df = word_features_df[word_features_df["Importance"] < 0].copy()
 
         # Set title based on whether main prediction is real or fake news
         if main_prediction == 0:  # Real news
@@ -942,8 +944,15 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
         else: # Main prediction is fake news
             title = "Top Words pushing prediction towards FAKE NEWS"
 
-        # Extract the top ten features of the filtered DataFrame
-        main_word_features_df = filtered_word_features_df.nlargest(10, "Importance")
+        if main_prediction == 0:  # Real news
+            opposite_title = "Top Words pushing prediction towards FAKE NEWS"
+        else: # Main prediction is fake news
+            opposite_title = "Top Words pushing prediction towards REAL NEWS"
+
+        # Extract the top ten features of the main prediction filtered DataFrame
+        main_prediction_top_word_features_df =  main_prediction_filtered_word_features_df.nlargest(10, "Importance")
+        # Extract the top ten features of the opposite prediction filtered DataFrame
+        opposite_prediction_top_word_features_df = opposite_prediction_filtered_word_features_df.nlargest(10, "Importance")
 
         # Check there ARE word features that were found to be important for the main class prediction
         if len(word_features_df) > 0:
@@ -952,7 +961,7 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
             # sort="-x" = sort features by x-value (importance score)
             # Reference: https://altair-viz.github.io/user_guide/generated/toplevel/altair.Chart.html#altair.Chart
             # How to create charts in Streamlit Reference: https://www.projectpro.io/recipes/display-charts-altair-library-streamlit
-            word_features_chart = alt.Chart(main_word_features_df).mark_bar().encode( # Use mark_bar to create bar_chart. Reference: https://altair-viz.github.io/user_guide/marks/index.html
+            word_features_chart = alt.Chart(main_prediction_top_word_features_df).mark_bar().encode( # Use mark_bar to create bar_chart. Reference: https://altair-viz.github.io/user_guide/marks/index.html
                 # Displays the categorical features (:N)/words on the x-axis
                 x=alt.X(
                     "Feature:N", # N = categorical variable
@@ -975,7 +984,7 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
                 color=alt.value("dodgerblue") if main_prediction == 0 else alt.value("red"), 
                 # Add "tooltips": explanations that appear when hovering above the bar
                 tooltip=["Feature",
-                        alt.Tooltip("Importance", title="Absolute Importance")]
+                        alt.Tooltip("Importance", title="Word Importance")]
             ).properties(
                 title=title,
                 height=400,
@@ -984,11 +993,51 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
                 labelFontSize=14,
                 titleFontSize=16
             )
+
             # Display the word features chart
             col1.altair_chart(word_features_chart , use_container_width=True)
         else:
-            # Shows the warning message that no important word features for the prediction were found
-            col1.warning("Error: No significant words have been found.")
+            st.warning("No significant word features pushing the classifier towards the main prediction have been found.")
+
+
+            # Create opposite prediction features chart
+            if len(opposite_prediction_top_word_features_df) > 0: # Check if there are opposite class word features to avoid errors for robust code
+                opposite_word_features_chart = alt.Chart(opposite_prediction_top_word_features_df).mark_bar().encode(
+                    x=alt.X(
+                        "Feature:N",
+                        sort=alt.EncodingSortField(
+                            field="Importance",
+                            order="descending"
+                        ),
+                        title="Word Feature",
+                        axis=alt.Axis(
+                            labelAngle=-45,
+                            labelFontSize=14,
+                            labelLimit=150,
+                            labelOverlap=False
+                        )),
+                    y=alt.Y(
+                        "Importance:Q",
+                        title="Importance Strength"),
+                    # Use the opposite color to the main prediction
+                    color=alt.value("red") if main_prediction == 0 else alt.value("dodgerblue"),
+                    tooltip=["Feature",
+                            alt.Tooltip("Importance", title="Word Importance")]
+                ).properties(
+                    title=opposite_title,
+                    height=400,
+                    width=500
+                ).configure_axis(
+                    labelFontSize=14,
+                    titleFontSize=16
+                )
+            
+                # Display the opposite word features chart
+                col1.altair_chart(opposite_word_features_chart, use_container_width=True)
+
+            else:
+                st.warning("No significant word features pushing the classifier away from the main prediction have been found.")
+        
     # Second column showing bar chart with importance scores for non-word features
     with col2:
 
