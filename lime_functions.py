@@ -1141,13 +1141,16 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
                     else:
                         importance_color = "red"
                         importance_explanation =  "(pushing towards fake news)"    
-                else:
+                elif row["Importance"] < 0:
                     if main_prediction == 0:
                         importance_color = "red"
                         importance_explanation = "(pushing towards fake news)"
                     else:
                         importance_color = "dodgerblue"
                         importance_explanation =  "(pushing towards real news)"    
+                else:
+                    importance_color = "grey"
+                    importance_explanation =  "Neutral - there was no significant impact on prediction."  
                 
                 # Add some text explaining what exactly this engineered feature and its score means for the prediction
                 container.markdown(f"""
