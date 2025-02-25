@@ -1,0 +1,1105 @@
+# lime_functions.py
+
+# Imports required libraries for data processing
+import pandas as pd
+import numpy as np
+import re
+# Imports required libraries for text processing
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+nltk.download('punkt')
+nltk.download('punkt_tab')
+# nltk.download('averaged_perceptron_tagger')
+# nltk.download('averaged_perceptron_tagger_eng')
+nltk.download('stopwords')
+# Creates a set (for efficiency) out of English stopwords to use to filter important word features
+stop_words = set(stopwords.words('english'))
+import spacy
+import os
+# Emotion lexicon for extracting positive and trust emotions scores for inputted news text
+from nrclex import NRCLex
+# Textstat library for extracting readability features for inputted news text
+import textstat
+
+# Visualization library for Streamlit
+import altair as alt
+import streamlit as st
+
+# LIME explanation library for text explanations
+from lime.lime_text import LimeTextExplainer
+
+# import subprocess
+#import spacy_streamlit
+
+#@st.cache_resource
+#def downloadSpacyModel():
+#    subprocess.run(["python3", "-m", "spacy", "download", "en_core_web_sm"])
+#    print("Downloaded Spacy model")
+
+# downloadSpacyModel()
+
+class BasicFeatureExtractor:
+    """
+        A class containing methods for extracting the identified discriminative features for 
+        helping a machine-learning based classifier categorize real and fake news, including features such as
+        normalized (by text length in word tokens) exclamation point count, third person pronoun frequency and PERSON
+        named entity frequency counts.
+    """
+    
+    def __init__(self):
+        # Load in the spacy model
+        self.nlp = spacy.load("spacy_model")
+
+    def extractExclamationPointFreqs(self, text):
+        """
+        A helper method that extracts the frequencies of exclamation points from a news text. 
+        To be applied using .apply or .progress_apply to a "text" column in a news DataFrame
+        
+            Input Parameters:
+                text (str): the news text to extract exclamation point frequencies from
+    
+            Output:
+                excl_point_freq (float): the normalized exclamation point frequency for the text.
+                Normalized by num of word tokens to handle varying text length datasets
+        """
+        # Count the number of exclamation points in the text
+        exclamation_count = text.count('!')
+        # Tokenize text for calculating text length
+        word_tokens = word_tokenize(text)
+        # Get text length in number of word tokens
+        text_length = len(word_tokens)
+        # Normalize the exclamation point frequency
+        return exclamation_count / text_length if text_length > 0 else 0 # Handle division-by-zero errs
+    
+
+
+    def extractThirdPersonPronounFreqs(self, text):
+        """
+        Extracts the normalized frequency counts of third-person pronouns in the inputted news text.
+        
+            Input Parameters:
+                text (str): the news text to extract pronoun features from.
+            
+            Output:
+                float: Normalized third-person pronoun frequency.
+        """
+        # Define a list of English third-person pronouns
+        third_person_pronouns = [
+            "he","he'd", "he's", "him", "his",
+            "her", "hers", 
+            "it", "it's", "its",
+            "one", "one's", 
+            "their", "theirs", "them","they", "they'd", "they'll", "they're", "they've",   
+            "she", "she'd", "she's"
+        ]
+
+        # Tokenize text for calculating text length
+        word_tokens = word_tokenize(text)
+        # Get text length in number of word tokens
+        text_length = len(word_tokens)
+
+        # Count frequency of third-person pronouns in the news text, lower to match the list of third-person pronouns above
+        third_person_count = sum(1 for token in word_tokens if token.lower() in third_person_pronouns)
+
+        # Normalize the frequency by text length in word tokens
+        return third_person_count / text_length if text_length > 0 else 0
+
+
+
+    def extractNounToVerbRatios(self, text):
+        """
+        Calculates the ratio of all types of nouns to all types of verbs in the text
+        using the Penn Treebank POS Tagset and the SpaCy library with the downloaded
+        "en_core_web_lg" model.
+        
+            Input Parameters:
+                text (str): the news text to extract noun-verb ratio features from.
+            
+            Output:
+                float: Noun-to-verb ratio, or 0.0 if no verbs are present.
+        """
+        
+        # Convert the text to an NLP doc object using the SpaCy library.
+        doc = self.nlp(text)
+        
+        # Define the Penn Treebank POS tag categories for nouns and verbs
+        # Reference here: https://www.ling.upenn.edu/courses/Fall_2003/ling001/penn_treebank_pos.html
+        noun_tags = ["NN", "NNS", "NNP", "NNPS"]
+        verb_tags = ["VB", "VBD", "VBG", "VBN", "VBP", "VBZ"]
+        
+        # Count nouns and verbs based on the Penn Treebank tags
+        noun_count = sum(1 for token in doc if token.tag_ in noun_tags)
+        verb_count = sum(1 for token in doc if token.tag_ in verb_tags)
+        
+        # Compute and return the noun-to-verb ratio (should be higher for fake news, more nouns)
+        return noun_count / verb_count if verb_count > 0 else 0.0 # Avoid division-by-zero error
+
+
+    def extractCARDINALNamedEntityFreqs(self, text):
+        """
+        Extracts the normalized frequency of CARDINAL named entities in the text
+        using the SpaCy library.
+        
+            Input Parameters:
+                text (str): The text to extract the CARDINAL named entity frequencies from.
+            
+            Output:
+                float: Normalized frequency (by number of tokens in the text) of CARDINAL named entities.
+        """
+        # Process the text with SpaCy to get NLP doc object
+        doc = self.nlp(text)
+         # Count how many named entities have the label "CARDINAL"
+        cardinal_entity_count = sum(1 for entity in doc.ents if entity.label_ == "CARDINAL")
+
+        # Tokenize the text
+        word_tokens = [token for token in doc]
+        
+        # Count number of word tokens in the text
+        text_length = len(word_tokens)
+
+        # Return the normalized frequency of CARDIAL named entities
+        return cardinal_entity_count / text_length if text_length > 0 else 0.0 # Avoid division-by-zero error
+
+
+    def extractPERSONNamedEntityFreqs(self, text):
+        """
+        Extracts the normalized frequency of PERSON named entities in the text
+        using the SpaCy library.
+        
+            Input Parameters:
+                text (str): The text to extract the PERSON named entity frequencies from.
+            
+            Output:
+                float: Normalized frequency (by number of tokens in the text) of PERSON named entities.
+        """
+        # Process the text with SpaCy to get NLP doc object
+        doc = self.nlp(text)
+        
+        # Count how many named entities have the label "PERSON"
+        person_entity_count = sum(1 for entity in doc.ents if entity.label_ == "PERSON")
+        
+        # Tokenize the text
+        word_tokens = [token for token in doc]
+        
+        # Count number of word tokens in the text
+        text_length = len(word_tokens)
+        
+        # Return the normalized frequency of PERSON named entities
+        return person_entity_count / text_length if text_length > 0 else 0.0 # Avoids division-by-zero error
+
+
+    def extractPositiveNRCLexiconEmotionScore(self, text):
+        """
+        Extracts the POSITIVE emotion score using the NRC Lexicon from the inputted news text.
+        
+            Input Parameters:
+                text (str): the news text to extract POSITIVE emotion score from.
+            
+            Output:
+                float: POSITIVE emotion score.
+        """
+        # Convert text to lowercase
+        text = text.lower()
+
+        # Create an NRC Emotion Lexicon object
+        emotion_obj = NRCLex(text)
+        
+        # Return the POSITIVE emotion score (use "get" to default to 0.0 if for some reason it is not found)
+        return emotion_obj.affect_frequencies.get("positive", 0.0) 
+
+
+    def extractTrustNRCLexiconEmotionScore(self, text):
+        """
+        Extracts the TRUST emotion score using the NRC Lexicon from the inputted news text.
+        
+            Input Parameters:
+                text (str): the news text to extract TRUST emotion score from.
+            
+            Output:
+                float: TRUST emotion score.
+        """
+        text = text.lower()
+
+        # Create an NRC Emotion Lexicon object
+        emotion_obj = NRCLex(text)
+        
+        # Return the TRUST emotion score (use "get" to default to 0.0 if for some reason it is not found)
+        return emotion_obj.affect_frequencies.get("trust", 0.0)
+
+
+    def extractFleschKincaidGradeLevel(self, text):
+        """
+        Extracts the Flesch-Kincaid Grade Level score for the input text.
+        
+        Input Parameters:
+            text (str): the news text to calculate the Flesch-Kincaid Grade Level score.
+        
+        Output:
+            float: the Flesch-Kincaid Grade Level score for the text.
+        """
+        return textstat.flesch_kincaid_grade(text)
+        
+    def extractDifficultWordsScore(self, text):
+        """
+        Extracts the number of difficult words in the input text using the textstat library.
+        
+        Input Parameters:
+            text (str): the news text to calculate the difficult words score.
+        
+        Output:
+            float: the number of difficult words score for the text.
+        """
+        # Convert text to lowercase
+        text = text.lower()
+        return textstat.difficult_words(text)
+    
+
+    def extractCapitalLetterFreqs(self, text):
+        """
+        Extracts the normalized frequency of capital letters in the input text.
+        Normalized by the total number of tokens to account for varying text lengths.
+    
+            Input Parameters:
+                text (str): The news text to extract capital letter frequencies from.
+            
+            Output:
+                float: Normalized frequency of capital letters in the text.
+        """
+        # Count the number of capital letters in the text
+        capital_count = sum(1 for char in text if char.isupper())
+        
+        # Tokenize the text
+        word_tokens = word_tokenize(text)
+
+        # Count number of word tokens in the text
+        text_length = len(word_tokens)
+        
+        # Normalize the frequency of capital letters
+        return capital_count / text_length if text_length > 0 else 0.0 # Avoids division-by-zero error
+        
+    
+    def extractBasicFeatures(self, df, dataset_name, root_save_path="../FPData/BasicFeatureExtractionDFs",):
+        """
+        Adds new columns to an inputted DataFrame that stores the frequency of 
+        or score for various features derived from the "text" column, hopefully for 
+        improved classification performance using a Passive Aggressive Classifier model.
+
+            Input Parameters:
+                df (pd.DataFrame): DataFrame with a "text" column containing news texts.
+    
+            Output:
+                pd.DataFrame: a new DataFrame with the additional feature columns
+        """
+        # Create a copy of the original DataFrame to store new features in
+        basic_feature_df = df.copy()
+
+        # Get dataset name without the ".csv" at the end to print out dataset name being processed
+        dataset_name_without_csv_extension = dataset_name.split('.')[0]
+        print(f"Extracting features for {dataset_name_without_csv_extension}...")
+        
+        # Apply the exclamation point frequency helper function...
+        print("Extracting normalized exclamation point frequencies...")
+        basic_feature_df["exclamation_point_frequency"] = basic_feature_df["text"].progress_apply(self.extractExclamationPointFreqs)
+        
+        # Apply the third-person pronoun frequency helper function...
+        print("Extracting third person pronoun frequencies...")
+        basic_feature_df["third_person_pronoun_frequency"] = basic_feature_df["text"].progress_apply(self.extractThirdPersonPronounFreqs)
+
+        # Apply the noun-to-verb ratio helper functionn
+        print("Extracting noun-to-verb ratio frequencies...")
+        basic_feature_df["noun_to_verb_ratio"] = basic_feature_df["text"].progress_apply(self.extractNounToVerbRatios)
+
+        # Apply the CARDINAL named entity frequency helper function to create a new column
+        print("Extracting CARDINAL named entity frequencies...")
+        basic_feature_df["cardinal_named_entity_frequency"] = basic_feature_df["text"].progress_apply(self.extractCARDINALNamedEntityFreqs)
+
+        # Apply the PERSON named entity frequency helper function to create a new column
+        print("Extracting PERSON named entity frequencies...")
+        basic_feature_df["person_named_entity_frequency"] = basic_feature_df["text"].progress_apply(self.extractPERSONNamedEntityFreqs)
+
+        # Apply the NRC Lexicon to get the POSITIVE emotion scores for each text
+        print("Extracting NRC Lexicon POSITIVE emotion scores...")
+        basic_feature_df["nrc_positive_emotion_score"] = basic_feature_df["text"].progress_apply(self.extractPositiveNRCLexiconEmotionScore)
+
+        # Apply the NRC Lexicon to get the TRUST emotion scores for each text
+        print("Extracting NRC Lexicon TRUST emotion scores...")
+        basic_feature_df["nrc_trust_emotion_score"] = basic_feature_df["text"].progress_apply(self.extractTrustNRCLexiconEmotionScore)
+
+        # Apply textstat package to get the Flesch-Kincaid U.S. Grade Level readability score
+        print("Extracting Flesch-Kincaid U.S. Grade readability scores...")
+        basic_feature_df["flesch_kincaid_readability_score"] = basic_feature_df["text"].progress_apply(self.extractFleschKincaidGradeLevel)
+
+        # Apply textstat package to get the difficult_words readability score
+        print("Extracting difficult words readability scores...")
+        basic_feature_df["difficult_words_readability_score"] = basic_feature_df["text"].progress_apply(self.extractDifficultWordsScore)
+
+        # Extract counts of capital letters for each text normalized by number of tokens
+        print("Extracting normalized capital letter frequency scores..")
+        basic_feature_df["capital_letter_frequency"] = basic_feature_df["text"].progress_apply(self.extractCapitalLetterFreqs)
+
+        # Save the dataset with extracted features to disk
+        basic_feature_df.to_csv(os.path.join(root_save_path, dataset_name), index=False)
+        
+        return basic_feature_df
+
+    def extractExtraFeaturesColumns(self, df):
+        """
+            Extracts the engineered features featuresets only from the DataFrame, exclude the other columns.
+
+            Input Parameters:
+                df (pd.DataFrame): news dataset to extract the engineered features from
+            Output:
+                pd.DataFrame: the extracted engineered feature columns from the DataFrame that was passed in
+        """
+        return df[[
+        "exclamation_point_frequency", "third_person_pronoun_frequency", "noun_to_verb_ratio",
+        "cardinal_named_entity_frequency", "person_named_entity_frequency", 
+        "nrc_positive_emotion_score", "nrc_trust_emotion_score", 
+        "flesch_kincaid_readability_score", "difficult_words_readability_score", 
+        "capital_letter_frequency"
+    ]] 
+
+    def extractFeaturesForSingleText(self, text):
+        """
+        Extracts the basic features for classifying the text, to concatenate with the fastText embeddings.
+        for a single text instance. It outputs a single-row DataFrame, as this will be used to extract
+        features for each perturbation of the text that LIME creates. Each single-row DataFrame for
+        the perturbed texts will then be concatenated into a multi-row DataFrame, storing the
+        features for all of the perturbed texts in a single table for model inputs.
+    
+        Input Parameters:
+            text (str): The text to extract features from.
+    
+        Output:
+            pd.DataFrame: A DataFrame storing the extracted basic feature values for this text, each feature per column
+        """
+        # Extract the features and store them in a dict
+        feature_dict = {
+            "exclamation_point_frequency": self.extractExclamationPointFreqs(text),
+            "third_person_pronoun_frequency": self.extractThirdPersonPronounFreqs(text),
+            "noun_to_verb_ratio": self.extractNounToVerbRatios(text),
+            "cardinal_named_entity_frequency": self.extractCARDINALNamedEntityFreqs(text),
+            "person_named_entity_frequency": self.extractPERSONNamedEntityFreqs(text),
+            "nrc_positive_emotion_score": self.extractPositiveNRCLexiconEmotionScore(text),
+            "nrc_trust_emotion_score": self.extractTrustNRCLexiconEmotionScore(text),
+            "flesch_kincaid_readability_score": self.extractFleschKincaidGradeLevel(text),
+            "difficult_words_readability_score": self.extractDifficultWordsScore(text),
+            "capital_letter_frequency": self.extractCapitalLetterFreqs(text),
+        }
+
+        # Convert the dict above to a DataFrame (it will contain a single row, as this is just one text)
+        feature_df = pd.DataFrame([feature_dict])
+        return feature_df
+
+
+
+def preprocessTextForFastTextEmbeddings(text):
+    """
+        Basic preprocessing function. It only cleans text from extra whitespace and newlines, as well as lowercasing,
+        in preparation for training a fastText model, which cannot handle newlines and trailing spaces.
+        Does not remove punctuation as based on feature analysis, this can be an important distinguishing factor for fake news.
+        Also does not aggressively normalize (lemmatize/stemming) words as this is handled by the fastText sub-word model.
+        
+        Input Parameters:
+            text (str): the text to clean
+        Output:
+            text (str): the cleaned text
+    """
+    # 1. Converts the text to lowercase
+    text = text.lower()
+   
+    # 2. Removes the newlines and extra whitespace (the \s regex matches any whitespace character including tabs/newlines)
+    text = re.sub(r"\s+", ' ', text)
+
+    # 3. Strips the remaining trailing whitespace
+    text = text.strip()
+   
+    return text
+
+# Helper function to get a fasttext embedding for text
+def getFastTextEmbedding(model, text):
+    """
+    Extracts the fastText dense embedding for a text using a pretrained fastText model.
+    
+    Input Parameters:
+        model: the pre-trained fastText model, trained on all-four combined text datasets
+        text (str): the text to extract the embedding for
+        
+    Output:
+        numpy.ndarray: the fastText dense embedding as a numpy array
+    """
+    text = preprocessTextForFastTextEmbeddings(text)
+    return model.get_sentence_vector(text)
+
+
+def combineFeaturesForSingleTextDF(single_text_df, scaler, feature_cols):
+    """
+        Scales and combines extra engineered engineered features and concatenates them into a row with the fastText
+        embeddings, outputting a 2D numpy array with a single row containing the concatenated features.
+
+        Input Parameters:
+        single_text_df (pd.DataFrame): a pandas DataFrame containing a single row with a text, fastText embedding, and extra features
+        scaler (sklearn.preprocessing.StandardScaler): a pre-fitted StandardScaler instance for scaling the engineered features
+        feature_cols (list): the list of column names for extracting the engineered features
+        
+        Output:
+            final_vector (numpy.ndarray): the final combined feature vector for inputting into the classifier model
+    """
+
+    # Extracts the fastText embedding from the single-text DataFrame (will be at row at index 0, as there is only 1 row for a single text) 
+    embedding = single_text_df["fasttext_embeddings"].iloc[0]
+
+    # Checks if it a np array, otherwise if was converted into string instead, extract the values in between the
+    # square brackets, use space as a separate to identify each float, and convert to np array using .fromstring
+    if not isinstance(embedding, np.ndarray):
+        embedding = np.fromstring(embedding.strip("[]"), sep=" ")
+        
+    # Scales the extra features using the pre-fitted StandardScaler
+    engineered_features = scaler.transform(single_text_df[feature_cols])
+
+    # Checks for and removes large values in the engineered features array
+    max_abs_value_features = np.max(np.abs(engineered_features)) # Gets the max value from the extra features
+    
+    # If max feature value is more than 1, then scale by a scaling factor
+    if max_abs_value_features > 1:
+        # Calculates scaling factor to get all features under 1: 1 divided by value of max feature
+        scale_factor = 1 / max_abs_value_features
+        # Applies the scale-factor element-wise to the engineered features
+        engineered_features = engineered_features * scale_factor
+
+    # Add a new dimension to the embedding array to make it a single "row" in a hypothetical stack of rows, for 2D array for model training
+    embedding = embedding.reshape(1, -1) 
+    # Concatenate embedding with the engineered features for the final text
+    final_vector = np.hstack([embedding, engineered_features])
+
+    return final_vector
+
+
+def explainPredictionWithLIME(
+    fasttext_model,
+    classifier_model,
+    fitted_scaler,
+    text,
+    feature_extractor,
+    num_features=50,
+    num_perturbed_samples=500
+):
+    """
+        Extracts features from text, predicts its probability of being fake news by using a custom pipeline
+        that first extracts FastText embeddings, extracts and scales extra features, and puts them into
+        a pre-trained Passive-Aggressive classifier wrapped in a Calibrated Classifier that outputs probabilities.
+        Uses LIME to generate local explanations for the individual news text's prediction.
+
+        Input Parameters:
+            fasttext_model (<fasttext.FastText._FastText> model): a supervised, pre-trained FastText model for extracting 
+                                                                  dense text embeddings, trained on training data from
+                                                                  four domain-specific datasets
+                                                    
+            classifier_model (sklearn.calibration.CalibratedClassifierCV): the pre-trained Calibrated Classifier that is
+                                                                    wrapping a Passive-Aggressive base classifier for 
+                                                                    outputting probabilities
+            fitted_scaler (sklearn.preprocessing._data.StandardScaler): a pre-trained scikit-learn StandardScaler, on the same 
+                                                                 combined dataset, for scaling the extra features
+            text (str): the text to get the fake or real news prediction for
+            feature_extractor (BasicFeatureExtractor): class for extracting extra semantic and linguistic features
+            num_perturbed_samples (int): number of perturbed samples to use for LIME explanations
+
+            Output:
+                dict: this stores a summary of the information for explaining the prediction using LIME. It contains:
+                - "explanation_object": the default LIME explanation object returned by the LIME text explainer
+                - "word_features_list": the list of tuples containing words and their LIME importance scores
+                - "extra_features_list": a list of tuples containing the extra engineered features and their importance scores
+                - "highlighted_text": the original text string formatted with HTML markup to highlight the important word features
+                - "probabilities": an array of probabilities for [real, fake] news
+                - "main_predicition": the final prediction, 0 for real news, 1 for fake news
+    """
+
+    # Instantiate a Lime Text Explainer
+    text_explainer = LimeTextExplainer(class_names=["real", "fake"])
+
+    # Extract the extra engineered semantic and linguistic features for this text
+    single_text_df = feature_extractor.extractFeaturesForSingleText(text)
+
+    # Add the original text as a column to the single-line features DF
+    single_text_df["text"] = text
+
+    # Extracts and stores ONLY the extra features (not the original text) in a features only table
+    extra_features = single_text_df.drop("text", axis=1)
+
+    # Extracts (as a list) the extra feature column names
+    extra_feature_names = extra_features.columns.tolist()
+
+    # Gets the fastText embedding for the inputted text, the getFastTextEmbedding preprocesses
+    # the text to remove newlines and trailing space, as well as lowercasing it
+    fasttext_embedding = getFastTextEmbedding(fasttext_model, text)
+
+    # Store the np fastText embedding in the single-row Dataframe
+    single_text_df["fasttext_embeddings"] = [fasttext_embedding]
+
+    # Returns the scaled and combined feature vector for the original input text
+    text_features = combineFeaturesForSingleTextDF(single_text_df, fitted_scaler, extra_feature_names)
+
+    # Predicts the news class and the class probabilities using the pre-trained classifier
+    text_prediction = classifier_model.predict(text_features)[0] # Extracts the single prediction from outputted list/array-like structure
+    text_probability_array = classifier_model.predict_proba(text_features)[0] # Gets the first (only) prediction here as well
+
+    
+    def predict_fn(perturbed_texts):
+        """
+        An inner function which LIME uses in order to predict probabilities of randomly-changed, perturbed texts
+        
+        Input Parameters:
+            perturbed_texts (list): a list of randomly changed, perturbed texts generated by LIME
+        
+        Output:
+            perturbed_probs (numpy.ndarray): the outputted array of probabilities for the perturbed news texts
+        """
+
+        # Stores he perturbed text extracted features for training in here
+        perturbed_text_features_df_list = []
+        
+        # Iterate over the perturbed texts
+        for perturbed_text in perturbed_texts:
+            # Extracts features for each perturbation of original text, this outputs a single-row DataFrame as for the single text before
+            df = feature_extractor.extractFeaturesForSingleText(perturbed_text)
+            # Add the actual text to the single-row DataFrame for this perturbed text
+            df["text"] = perturbed_text
+            # Add the fastText embedding to the single-row DataFrame
+            df["fasttext_embeddings"] = [getFastTextEmbedding(fasttext_model, perturbed_text)]
+            # Add the single-row DataFrame to the list of DataFrames for concatenation
+            perturbed_text_features_df_list.append(df)
+        
+        # Concatenate the single perturbed rows into one whole DataFrame
+        perturbations_df = pd.concat(perturbed_text_features_df_list, axis=0, ignore_index=True)
+        
+        # Extract, scale and concatenate extra features with fastText embeddings into arrays for model inputs
+        perturbed_feature_arrays = []
+
+        # Iterates over rows in the combined, perturbed features and text DataFrame for the changed samples
+        for i in range(len(perturbations_df)):
+            # Extracts a single row of perturbed features and text
+            perturbed_text_row = perturbations_df.iloc[[i]]
+            # Combines and scales the extra features with the fastText embeddings, outputs a single array of features
+            perturbed_features = combineFeaturesForSingleTextDF(perturbed_text_row, fitted_scaler, extra_feature_names)
+            # Append the single text's features to the list storing all perturbed features
+            perturbed_feature_arrays.append(perturbed_features)
+        
+        # Stacks all the rows of features into a single numpy features matrix (2D array)
+        perturbed_feature_arrays = np.vstack(perturbed_feature_arrays)
+        
+        # Use the trained model to get the probabilities for all the perturbed feature arrays
+        perturbed_probs = classifier_model.predict_proba(perturbed_feature_arrays)
+        
+        return perturbed_probs
+
+    # Generate the LIME explanation using .explain_instance()
+    # Reference: https://lime-ml.readthedocs.io/en/latest/lime.html
+    """"
+        Docs: "First, we generate neighborhood data by randomly perturbing features from the instance [...]
+        We then learn locally weighted linear models on this neighborhood data to explain each of the classes in an interpretable way (see lime_base.py)."
+    """
+    explanation = text_explainer.explain_instance(
+        text, # Single original text
+        # Docs: a required "classifier prediction probability function, which takes a numpy array and outputs prediction
+        #  probabilities. For ScikitClassifiers, this is classifier.predict_proba.""
+        predict_fn, # Nested function for extracting the extra features for each perturbed sample of the text and getting prediciton probs
+        num_features=num_features, # Number of top word-features to output in explanation, make itproportional to text length in tokens
+        num_samples=num_perturbed_samples, # Number of perturbed versions to generate: a higher value inc. accuracy but takes more time. Default = 500
+        labels=[text_prediction] # Pos scores = pushing towards the predicted class
+    )
+    
+    # Returns the word feature explanations as a list of tuples with scores for the predicted label
+    word_features = explanation.as_list(label=text_prediction)
+
+    print("WORD FEATURES", word_features)
+
+    # Converts the outputted word features to a list of tuples storing (word, importance_score)
+    # Filter out stopwords from important word features like "the", "an", etc.
+    word_features_filtered = [(word_feature[0], word_feature[1]) for word_feature in word_features
+                             if word_feature[0].lower() not in stop_words] 
+
+    # Sorts the text_feature_list in descending order by absolute value of importance scores
+    word_feature_list_sorted = sorted(word_features_filtered, key = lambda x: abs(x[1]), reverse=True)
+
+    print(f"\n\n{word_feature_list_sorted}\n\n")
+
+    # Creates a list to store the extra features'importance in this list of tuples (feature_name, feature_importance)
+    extra_feature_importances= []
+
+    # Iterate over extra features
+    for feature in extra_feature_names:
+        # Creates a perturbed version of the original single text row, but with the feature's value set to 0/zero it out to
+        # see what happens when you remove it
+        perturbed_df = single_text_df.copy()
+        perturbed_df[feature] = 0
+
+        # Gets the features array for the original text but with this feature zeroed out
+        features_perturbed = combineFeaturesForSingleTextDF(perturbed_df, fitted_scaler, extra_feature_names)
+
+        # Get the [Real Fake] probability array for the text with the feature zeroed out
+        perturbed_probability_array = classifier_model.predict_proba(features_perturbed)[0]
+        
+        # Calculate the importance of the feature to the main prediction, by subtracting the probability of the main prediction when the
+        # feature is removed from the probability for the original text
+        feature_importance = text_probability_array[text_prediction] - perturbed_probability_array[text_prediction] # Use main prediction integer label to access prob
+
+        # Append tuple to list storing name of feature with importance
+        extra_feature_importances.append((feature, feature_importance))
+
+
+    # Sort features scores by absolute importance of "feature_importance", the second elem in tuple, in desc. order
+    extra_feature_importances.sort(key=lambda x: abs(x[1]), reverse=True)
+
+    # Generate the highlighted text using the helper function, outputs a string with HTML-formatted text
+    highlighted_text = highlightText(text, word_feature_list_sorted, text_prediction)
+    
+    # Return explanation dictionary
+    return {
+        "explanation_object": explanation,
+        "word_features_list": word_feature_list_sorted,
+        "extra_features_list": extra_feature_importances,
+        "highlighted_text": highlighted_text,
+        "probabilities": text_probability_array,
+        "main_prediction": text_prediction
+    }
+
+
+
+
+def highlightText(text, word_feature_list, text_prediction):
+    """
+    A helper function for highlighting the words in the input text based on their importance scores and their impact on the prediction,
+    relative to the predicted class, the one with the highest probability.
+
+    Input Parameters:
+        text (str): the text to highlight
+        word_feature_list (list of tuples): list of word-feature, importance-score tuples outputted by the LIME text explainer
+
+    Output:
+        str: HTML formatted string with tags designating the highlighted text
+    """
+    
+    # A list to store a series of dictionaries containing positions, colors and opacities for highlighting parts of the text with HTML tags based on word importance
+    highlight_positions = []
+    
+    # Calculate the maximum absolute importance score from all the word features
+    max_importance = max(abs(importance) for feature, importance in word_feature_list)
+
+    # Find all positions to highlight in the original text
+    for word_feature, importance in word_feature_list:
+        
+        # Placeholder for where to start searching for in the original text (to highlight the important words), this will be updated throughout the loop
+        pos = 0 # Start at first character
+
+        # While-loop runs until all the current word (feature) positions have been found for highlighting
+        while True:
+
+            # Finds the first occurrence of the word feature (lowercase for matching) in the original text
+            pos = text.lower().find(word_feature.lower(), pos)
+            
+            # If the word is not found, .find() returns -1, so break out of the while loop for this particular feature
+            if pos == -1:
+                break
+                
+            # Check if the found word is a whole word (not matching solely on just a sub-component of a word, like "portion" in "proportion")
+            boundary_positions = detectWordBoundaries(text, pos, word_feature)
+
+            # If match is just PART of a word, then move to next position in the string after this match if the found by incrementing pos by 1, and move back
+            # to beginning of the while loop to check for the next occurence of this word in the text
+            if boundary_positions is None:
+                pos += 1 
+                continue
+            
+            # Unpack the word beginning and end positions from the returned object if it is not None and this is a whole word
+            word_start_pos, word_end_pos = boundary_positions
+
+            # Map colors to word prediction importance strength
+            # If overall predicted class is 0/real, then positive scores push towards real news (should be in blue)
+            # Else, if overall predicted class is 1/fake, then positive scores push towards fake news (should be in red)
+            if importance > 0: # for word-importances same as pred class
+                color = "blue" if text_prediction == 0 else "red" # if same importance score as prediction, make sure read news=blue, and fake=red
+            else:
+                color = "red" if text_prediction == 0 else "blue" # if different score to prediction, make sure non-real news=red, and non-fake news=blue
+            
+            # Add positions for highlighting to the overall dict for the whole text
+            highlight_positions.append({
+                "start": word_start_pos, 
+                "end": word_end_pos, 
+                "color": color,
+                "opacity": abs(importance) / max_importance if max_importance != 0 else 0, 
+                "text": text[word_start_pos:word_end_pos]
+            })
+            
+            # Move past this word by incrementing the string index to be at the character just following this word
+            pos = word_end_pos  
+
+    # Sort the word position dictionaries in ascending order based on word start index
+    highlight_positions.sort(key = lambda x: x["start"])
+    
+    # Merge the adjacent highlights of the same color to represent bigrams and trigrams
+    merged_positions = []
+    # If there is more than 1 dictionary in the highlight_positions list then proceed
+    if highlight_positions:
+
+        # Extract the first dictionary (text segment information) to highlight 
+        current = highlight_positions[0]
+
+        # Iterates through all of the next highlighting information dictionaries after the current one
+        for next_pos in highlight_positions[1:]:
+
+            # Check if the next segment to be highlighted starts right after current one ends (or overlaps) and has same color (is associated with the same prediction)
+            if (next_pos["start"] <= current["end"] + 1 and # Add  1 to ensure consecutive importance same predictions words separated by space are merged
+                next_pos["color"] == current["color"]):
+
+                # Merge by extending current end position to be the one at the end of the next segment instead
+                current["end"] = max(current["end"], next_pos["end"])
+
+                # Use whichever opacity was stronger (less transparency) between the two segments to be merged
+                current["opacity"] = max(current["opacity"], next_pos["opacity"])
+
+                # Update the text to be highlighted based on the news positions
+                current["text"] = text[current["start"]:current["end"]]
+            else:
+                # If cannot merge with the next important word because they don't overlap
+                # add the current highlight info to the main list, move to next dictionary by updating current variable
+                if next_pos["start"] > current["end"]: 
+                    merged_positions.append(current)
+                    current = next_pos
+                else:
+                    # If overlapping words have different colors (blue for real and red for fake), skip the word with the weaker importance or opacity
+                    if next_pos["opacity"] > current["opacity"]:
+                        current = next_pos
+        
+        merged_positions.append(current)  # Add the last position
+
+    # Create a list for building the text highlighted using HTML tags
+    result = []
+
+    # Use this to track rest of text after highlighted sections are finished
+    last_end = 0
+    
+    # Iterate over the dicts specifying highlighting positions and opacities (including merged consecutive sections functionalty)
+    for pos in merged_positions:
+
+        # If the next segment to highlight's start position is greater than last_end, append the (non-highlighted) text before this segemnt to the result list
+        if pos["start"] > last_end:
+            result.append(text[last_end:pos["start"]])
+        
+        # Map the segment dict's information to the appropriate opacity andcolor to use in in-line CSS HTML tags 
+        color = "rgba(255, 0, 0," if pos["color"] == "red" else "rgba(0, 90, 156,"  # red or dodger blue
+        # Get the value for the alpha opacity channel
+        background_color = f"{color}{pos['opacity']})"
+        
+        # Append the highlighted text with span HTML tag and inline CSS styling to the result
+        result.append(
+            f"<span style='background-color:{background_color}; font-weight: bold'>"
+            f"{pos['text']}</span>"
+        )
+        
+        # Update last_end tracker to the end index of the highlighted section
+        last_end = pos["end"]
+    
+    # After done iterating through all highlighted segments, add any remaining text after last_end to the result list
+    if last_end < len(text):
+        result.append(text[last_end:])
+
+    # Rejoin the result list containing HTML for highlighting into a string
+    return "".join(result)
+
+
+
+def detectWordBoundaries(text, word_start_pos, word):
+    """
+    Helper function to ensure one is only matching whole words only when highlighting text, and not parts of 
+    words (e.g. avoid highlighting the word feature "hand" when iterating over the word "handle")
+
+    Returns the start and end position if it's a valid word boundary (start and ende of word), None otherwise
+
+    Input Parameters:
+        text (str): the whole text the word to highlight is part of
+        word_start_pos (int): starting position of word (feature)
+        word (str): the word feature that should be highlighted
+
+    Output:
+        tuple of word_start_pos (int), word_end_pos (int): return positions only if word is indeed a word surrounded by a boundary
+        None: returns None if there is no valid word boundary around this instance of the word substring
+    """
+
+    # Define punctuation characters for detecting word boundaries, such as space, exclamation mark, hyphen, quotes, newline, tab
+    boundary_chars = set(' .,!?;:()[]{}"\n\t-')
+    
+    # Check for word boundary at start of the word to highlight: passes check if position is 0 (start of text) or if previous character is in boundary_chars
+    start_check = word_start_pos == 0 or text[word_start_pos - 1] in boundary_chars
+
+    # Calculate end position by adding start idx to length of tword
+    word_end_pos = word_start_pos + len(word)
+
+    # Check for word boundary at end of word to highlight: it passes if either the word end idx is the last pos in whole text or next character is in Boundary
+    end_check = word_end_pos == len(text) or text[word_end_pos] in boundary_chars
+
+    # If both start_check and end_check are legit, return the word start and end positions
+    if start_check and end_check:
+        return word_start_pos, word_end_pos
+
+    # If word is part of a larger word, return None instead of the positions
+    return None
+
+
+def displayAnalysisResults(explanation_dict, container, news_text, feature_extractor, FEATURE_EXPLANATIONS):
+
+    """
+    Displays comprehensive LIME prediction analysis results including predivted label, prediction probabilities, confidence scores, and feature importance charts.
+    
+    Input Parameters:
+        explanation_dict (dict): dict containing LIME explanation results, including word and extra feature scores, and HTML-marked up highlighted text
+        container: the instance of the Streamlit app container to display the results in (passed in inside of app.py)
+        news_text (str): the user's inputted text to generate prediction and LIME explanations for
+        feature_extractor (an instance of the BasicFeatureExtractor class): for processing the inputted text to get semantic and linguistic features
+        FEATURE_EXPLANATIONS (dict): natural language explanations of the different exra engineered non-word semantic and linguistic features
+    """
+    
+    # Convert news category label from 0/1 to text labels
+    main_prediction = explanation_dict["main_prediction"]
+    main_prediction_as_text = "Fake News" if explanation_dict["main_prediction"] == 1 else "Real News"
+    
+    # Extract the [real, fake] probability array returned from LIME explainer function
+    probs = explanation_dict["probabilities"]
+    
+    # Display the results based on LIME explainer output
+    container.subheader("Text Analysis Results")
+    # Write general predicted label
+    container.write(f"**General Prediction:** {main_prediction_as_text}")
+    # Write probabilities of being real and fake news
+    container.write("**Confidence Scores:**")
+
+    if main_prediction_as_text == "Real News":
+        container.markdown(f"- <span style='color:dodgerblue; font-weight: bold'>Real News: {probs[0]:.2%}</span>", unsafe_allow_html=True)
+        container.markdown(f"- <span style='color:red'>Fake News: {probs[1]:.2%}</span>", unsafe_allow_html=True)
+    else:
+        container.markdown(f"- <span style='color:dodgerblue'>Real News: {probs[0]:.2%}</span>", unsafe_allow_html=True)
+        container.markdown(f"- <span style='color:red; font-weight: bold'>Fake News: {probs[1]:.2%}</span>", unsafe_allow_html=True)
+
+
+    
+    # Display the highlighted text title using Markdown and inline styling to adjust size and padding
+    st.markdown("""
+        <div style='padding-top: 20px; padding-bottom:10px; font-size: 24px; font-weight: bold;'>
+            Highlighted Text Section
+        </div>
+        """, unsafe_allow_html=True  # Reference: https://discuss.streamlit.io/t/unsafe-allow-html-in-code-block/54093
+    )
+    
+    # Display the explanation for the highlighted text
+    st.markdown("""
+        <div style='padding-bottom:12px; padding-top: 12px; font-size: 18px; font-style: italic;'>
+        Highlighted text shows the words (features) pushing the prediction towards <span style="color: dodgerblue; font-weight: bold;">real news</span> in blue 
+        and to <span style="color: red; font-weight: bold;">fake news</span> in red.
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # Reference: https://docs.streamlit.io/develop/api-reference/layout/st.expander
+    # Ïnsert a multi-element container that can be expanded/collapsed.""
+    with st.expander("View Highlighted Text:"):
+        # Format the expandable scroll-box to show highlighted (blue=real, red=fake) text outputted by LIME Explainer using inline CSS to allow y-scrolling and padding
+        st.markdown("""
+            <div style='height: 450px; overflow-y: scroll; border: 2px solid #d3d3d3; padding: 12px;'>
+                {}
+            </div>  
+            """.format(explanation_dict["highlighted_text"]), unsafe_allow_html=True)
+        
+    # Set more padding between the two charts
+    st.markdown("""
+    <style>
+        .stColumn > div {
+            padding: 0 20px;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+    
+    # Title for bar charts for feature importance analysis
+    container.subheader("Feature Importance Analysis")
+
+    # Create two columns for side-by-side bar charts for word features on the left and extra features on the right
+    col1, col2 = container.columns(2)
+    
+    # First column: word features
+    with col1:
+        col1.write("### Top Word Features")
+
+        # Gets the top text-based features identified by LIME into a DataFrame for easier sorting and filtering
+        word_features_df = pd.DataFrame(
+            explanation_dict["word_features_list"],
+            columns=["Feature", "Importance"]
+        )
+
+        # Filter to show the words that pushed the classifier towards the main prediction (positive word scores)
+        filtered_word_features_df = word_features_df[word_features_df["Importance"] > 0].copy()
+
+        # Set title based on whether main prediction is real or fake news
+        if main_prediction == 0:  # Real news
+            title = "Top Words pushing prediction towards REAL NEWS"
+        else: # Main prediction is fake news
+            title = "Top Words pushing prediction towards FAKE NEWS"
+
+        # Extract the top ten features of the filtered DataFrame
+        main_word_features_df = filtered_word_features_df.nlargest(10, "Importance")
+
+        # Check there ARE word features that were found to be important for the main class prediction
+        if len(word_features_df) > 0:
+            # Create bar chart for most important text features using the Altair visualization library using text_features_df
+            # Q = specifies this feature/value is quantitative, N = specifies it is nominal/categorical
+            # sort="-x" = sort features by x-value (importance score)
+            # Reference: https://altair-viz.github.io/user_guide/generated/toplevel/altair.Chart.html#altair.Chart
+            # How to create charts in Streamlit Reference: https://www.projectpro.io/recipes/display-charts-altair-library-streamlit
+            word_features_chart = alt.Chart(main_word_features_df).mark_bar().encode( # Use mark_bar to create bar_chart. Reference: https://altair-viz.github.io/user_guide/marks/index.html
+                # Displays the categorical features (:N)/words on the x-axis
+                x=alt.X(
+                    "Feature:N", # N = categorical variable
+                    sort=alt.EncodingSortField(
+                        field="Importance",  # Sort in desc. orer by abs importance
+                        order="descending" 
+                    ),
+                    title="Word Feature",
+                    axis=alt.Axis(
+                        labelAngle=-45,  # Uses a rotation of 45 degrees to read labels better
+                        labelFontSize=14,
+                        labelLimit=150,  # Increase label width limit
+                        labelOverlap=False  # Prevent label overlap
+                    )),
+                # Plot importance score on y-axis 
+                y=alt.Y( 
+                        "Importance:Q", # Q means numerical value for Altair
+                        title="Importance Strength"),
+                # Set blue bars for real news prediction, red for fake 
+                color=alt.value("dodgerblue") if main_prediction == 0 else alt.value("red"), 
+                # Add "tooltips": explanations that appear when hovering above the bar
+                tooltip=["Feature",
+                        alt.Tooltip("Importance", title="Absolute Importance")]
+            ).properties(
+                title=title,
+                height=400,
+                width=500
+            ).configure_axis(
+                labelFontSize=14,
+                titleFontSize=16
+            )
+            # Display the word features chart
+            col1.altair_chart(word_features_chart , use_container_width=True)
+        else:
+            # Shows the warning message that no important word features for the prediction were found
+            col1.warning("Error: No significant words have been found.")
+    # Second column showing bar chart with importance scores for non-word features
+    with col2:
+
+        col2.write("### Top Extra Semantic and Linguistic Features")
+        
+        # Create a DataFrame from the extra features list returned by the LIME explainer function
+        extra_features_df = pd.DataFrame(
+            explanation_dict["extra_features_list"],
+            columns=["Feature", "Importance"]
+        )
+        
+        # Sort the features by their absolute importance
+        extra_features_df["Absolute Importance"] = extra_features_df["Importance"].abs() # Create new absolute importance column first
+        extra_features_df = extra_features_df.nlargest(10, "Absolute Importance")
+        
+        # Add the original feature name before mapping to the explanations
+        extra_features_df["Original Feature"] = extra_features_df["Feature"]
+        
+        # Map feature column variables to user-readable strings 
+        feature_name_mapping = {
+            "exclamation_point_frequency": "Exclamation Point Usage",
+            "third_person_pronoun_frequency": "3rd Per. Pronoun Usage",
+            "noun_to_verb_ratio": "Noun/Verb Ratio",
+            "cardinal_named_entity_frequency": "Number Usage",
+            "person_named_entity_frequency": "Person Name Usage",
+            "nrc_positive_emotion_score": "Positive Emotion",
+            "nrc_trust_emotion_score": "Trust Score",
+            "flesch_kincaid_readability_score": "Readability Grade",
+            "difficult_words_readability_score": "Difficult Words",
+            "capital_letter_frequency": "Capital Letter Usage"
+        }
+        
+        # Maps the features to their more readable names listed in the dictionary above
+        extra_features_df["Feature"] = extra_features_df["Feature"].map(feature_name_mapping)
+        
+        # Maps the explanations to their natural language explanation for users
+        extra_features_df["Explanation"] = extra_features_df["Original Feature"].map(FEATURE_EXPLANATIONS)
+        
+        # Creates the bar chart with enhanced tooltips for explaining what features mean to users when they hover over a bar
+        extra_features_chart = alt.Chart(extra_features_df).mark_bar().encode(
+            x=alt.X("Importance:Q", title="Importance Strength"),
+            y=alt.Y("Feature:N",
+                    sort=alt.EncodingSortField(
+                        field="Absolute Importance", # Sorts features by ABSOLUTE value of importance
+                        order="descending"
+                    ),
+                    axis=alt.Axis(
+                        labelFontSize=14 # Sets feature labels font size
+                    )), 
+                color=alt.condition(
+                # Checks if the importance score pushes in the same direction as the predicted class
+                alt.datum.Importance > 0,
+                alt.value("dodgerblue") if main_prediction == 0 else alt.value("red"), 
+                alt.value("red") if main_prediction == 0 else alt.value("dodgerblue")
+            ),
+            tooltip=["Feature", "Importance", "Explanation"]  # Add tooltip showing feature and importance if user hovers over the bar 
+        ).properties(
+            title="Top 10 Extra Features",
+            height=400,
+            width=500
+        ) # Add title and size
+        
+        # Show the extra features chart in the column
+        col2.altair_chart(extra_features_chart, use_container_width=True) # Make span across whole container
+        
+        # Add a legend explanation for the color-coded bar charts and highlighted text
+        container.markdown(f"""
+            **Legend:**
+            - 🔵 **Blue bars**: Features pushing towards real news classification
+            - 🔴 **Red bars**: Features pushing towards fake news classification
+            
+            The length of each bar and color represent how strongly this feature
+            in the news text pushes the classifier towards a REAL or FAKE prediction.
+            For more details about the raw, scaled scores of these features and
+            explanations of their distributions in real vs fake training data,
+            please click below or on the Key Pattern Visualizations tab above.
+        """)
+        
+                
+        # Extract the actual feature values for the single text news prediction
+        single_text_df = feature_extractor.extractFeaturesForSingleText(news_text)
+        
+        with col2.expander("*View More Detailed Feature Score Information*"):
+            
+            # Iterate over the extra features to explain each one
+            for index, row in extra_features_df.iterrows():
+                # Get the raw-score/actual feature value for the news text
+                actual_value = single_text_df[row["Original Feature"]].iloc[0]
+                # Determines its color based on its importance value: red if pushing towards positive/fake news, else blue
+                # Maps the importance score to string description
+                if row["Importance"] > 0:
+                    if main_prediction == 0:
+                        importance_color = "dodgerblue"
+                        importance_explanation = "(pushing towards real news)"
+                    else:
+                        importance_color = "red"
+                        importance_explanation =  "(pushing towards fake news)"    
+                else:
+                    if main_prediction == 0:
+                        importance_color = "red"
+                        importance_explanation = "(pushing towards fake news)"
+                    else:
+                        importance_color = "dodgerblue"
+                        importance_explanation =  "(pushing towards real news)"    
+                
+                # Add some text explaining what exactly this engineered feature and its score means for the prediction
+                container.markdown(f"""
+                    **{row["Feature"]}**
+                    - Raw Score (not importance score, but the actual feature): {actual_value:.4f}
+                    - Impact on Classification: <span style='color:{importance_color}'>{row["Importance"]:.4f} {importance_explanation}</span>
+                    - {FEATURE_EXPLANATIONS[row["Original Feature"]]}
+                    ---
+                """, unsafe_allow_html=True)
+                
