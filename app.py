@@ -243,13 +243,13 @@ with tabs[2]:
     st.subheader("Named Entity PERSON Frequency Counts")
     emotions_img = plt.imread("all_four_datasets_person_named_entities_bar_chart_real_vs_fake.png")
     st.image(emotions_img, caption="PERSON named entity count for fake vs real news", use_container_width=True)
-    st.write("Fake news (in this dataset) often showed more references to PERSON named entities than real news.")
+    st.write("Fake news (in this dataset) often contained more references to PERSON named entities than real news.")
 
     # Named Entity CARDINAL counts
     st.subheader("Named Entity CARDINAL (i.e. numbers) Frequency Counts")
     emotions_img = plt.imread("all_four_datasets_cardinal_named_entities_bar_chart_real_vs_fake.png")
     st.image(emotions_img, caption="CARDINAL (numbers) named entity count for fake vs real news", use_container_width=True)
-    st.write("Fake news referred to less numerical data (i.e. lower CARDINAL named entity frequencies) than real news.")
+    st.write("Fake news tended to contain less numerical data (i.e. lower CARDINAL named entity frequencies) than real news.")
 
 
     # Add an expander with more detailed explanation
