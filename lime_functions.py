@@ -969,6 +969,7 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
                         field="Importance",  # Sort in desc. orer by abs importance
                         order="descending" 
                     ),
+                    title="Word Feature",
                     axis=alt.Axis(
                         labelAngle=-45,  # Uses a rotation of 45 degrees to read labels better
                         labelFontSize=14,
@@ -1118,9 +1119,9 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
             
             The length of each bar and color represent how strongly this feature
             in the news text pushes the classifier towards a REAL or FAKE prediction.
-            For more details about the raw, scaled scores of these features and
-            explanations of their distributions in real vs fake training data,
-            please click below or on the Key Pattern Visualizations tab above.
+            For more details about these features' distributions and patterns
+            in the real vs fake training data this model was trained on,
+            please click below to expand the explanations.
         """)
         
                 
@@ -1131,8 +1132,6 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
             
             # Iterate over the extra features to explain each one
             for index, row in extra_features_df.iterrows():
-                # Get the raw-score/actual feature value for the news text
-                actual_value = single_text_df[row["Original Feature"]].iloc[0]
                 # Determines its color based on its importance value: red if pushing towards positive/fake news, else blue
                 # Maps the importance score to string description
                 if row["Importance"] > 0:
@@ -1153,7 +1152,6 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
                 # Add some text explaining what exactly this engineered feature and its score means for the prediction
                 container.markdown(f"""
                     **{row["Feature"]}**
-                    - Raw Score (not importance score, but the actual feature): {actual_value:.4f}
                     - Impact on Classification: <span style='color:{importance_color}'>{row["Importance"]:.4f} {importance_explanation}</span>
                     - {FEATURE_EXPLANATIONS[row["Original Feature"]]}
                     ---

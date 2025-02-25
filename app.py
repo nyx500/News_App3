@@ -19,17 +19,52 @@ from lime_functions import BasicFeatureExtractor, explainPredictionWithLIME, dis
 
 
 FEATURE_EXPLANATIONS = {
-    "exclamation_point_frequency": "Normalized exclamation marks frequency counts. Higher raw scores may indicate more emotional or sensational writing, more associated with fake news in the training data.",
-    "third_person_pronoun_frequency": "Normalized frequency of third-person pronouns (he, she, they, etc.). Higher raw scores may indicate narrative and story-telling style. More positive scores associated with fake news than real news in training data.",
-    "noun_to_verb_ratio": "Ratio of nouns to verbs. Higher values suggest more descriptive rather than action-focused writing. Higher scores (more nouns to verbs) associated more with real news than fake news in training data. Negative values more associated with fake news than real news.",
-    "cardinal_named_entity_frequency": "Normalized frequency of numbers and quantities. Higher scores indicate higher level of specific details, more associated with real news.",
-    "person_named_entity_frequency": "Normalized frequency of PERSON named entities. Shows how person-focused the text is, higher scores more associated with fake news.",
-    "nrc_positive_emotion_score": "Measure of the positive emotional content using the NRC lexicon. Higher values indicate more positive tone, and more positive tone is associated more with real news than fake news.",
-    "nrc_trust_emotion_score": "Measure of trust-related words using NRC lexicon. Higher values suggest more credibility-focused language, and is more associated with real news than fake news.",
-    "flesch_kincaid_readability_score": "U.S. grade level required to understand the text. Higher scores indicate more complex writing, which is associated more with real news in the training data.",
-    "difficult_words_readability_score": "Count of complex words not included in the Dall-Chall word list. Higher values indicate more sophisticated vocabulary, associated more with real news in the training data.",
-    "capital_letter_frequency": "Normalized frequency of capital letters. Higher values might indicate more emphasis and acronyms. Associated more with real news in training data"
+    "exclamation_point_frequency": 
+        """Normalized exclamation marks frequency counts. Higher frequencies of exclamation marks in text 
+        can indicate more emotional or sensational writing, and thus were more strongly associated 
+        with fake news in the training data.""",
+    
+    "third_person_pronoun_frequency": 
+        """Normalized frequency of third-person pronouns (he, she, they, etc.). Higher scores might indicate a more story-like 
+        narrative style. Therefore, the more positive the original score scores, the more likely the text was to be fake news.""",
+    
+    "noun_to_verb_ratio": 
+        """Ratio of nouns to verbs. Higher values (more nouns) suggest more descriptive rather than action-focused writing. 
+        Higher scores (more nouns to verbs) were thus associated more with real news than fake news in training data. 
+        Negative values, with more verbs, were associated with fake news more than real news, perhaps due to contributing 
+        towards a more fast-paced, action-based style.""",
+    
+    "cardinal_named_entity_frequency": 
+        """Normalized frequency of numbers and quantities. Higher scores indicate a higher level of specific details, and they were
+        more associated with real news in the training data. Fake news contained less numerical facts on the whole.""",
+    
+    "person_named_entity_frequency": 
+        """Normalized frequency of PERSON named entities. Shows how person-focused the text is, higher scores more 
+        associated with fake news, showing that disinformation campaigns (at least based on the training data),
+        was closely tied to attempts to harm a person's reputation through different propaganda campaigns.""",
+    
+    "nrc_positive_emotion_score": 
+        """Measure of the positive emotional content using the NRC lexicon. Higher values indicate more words associated with positive emotions, 
+        and a more positive tone was more closely associated more with real news than fake news in the training data.""",
+    
+    "nrc_trust_emotion_score": 
+        """The normalized count of trust-related words using NRC lexicon. Higher values suggest more credibility-focused language, 
+        and were more associated with real news than fake news. Fake news contained considerably lower scores for trust-related words
+        in the training data.""",
+    
+    "flesch_kincaid_readability_score": 
+        """U.S. grade level required to understand the text. A higher score indicates more complex writing, which was 
+        associated more with real news in the training data, while fake news in general used simpler language.""",
+    
+    "difficult_words_readability_score": 
+        """Count of complex words not included in the Dall-Chall word list. Higher values indicate more sophisticated vocabulary, 
+        and this was associated more with real news in the training data.""",
+    
+    "capital_letter_frequency": 
+        """Normalized frequency of capital letters. Higher values might indicate more emphasis and acronyms. 
+        Greater capital letter usage was associated more with real news in training data."""
 }
+
 
 
 # Load the trained model pipeline
