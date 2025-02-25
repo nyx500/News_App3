@@ -1000,43 +1000,43 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
             st.warning("No significant word features pushing the classifier towards the main prediction have been found.")
 
 
-            # Create opposite prediction features chart
-            if len(opposite_prediction_top_word_features_df) > 0: # Check if there are opposite class word features to avoid errors for robust code
-                opposite_word_features_chart = alt.Chart(opposite_prediction_top_word_features_df).mark_bar().encode(
-                    x=alt.X(
-                        "Feature:N",
-                        sort=alt.EncodingSortField(
-                            field="Importance",
-                            order="descending"
-                        ),
-                        title="Word Feature",
-                        axis=alt.Axis(
-                            labelAngle=-45,
-                            labelFontSize=14,
-                            labelLimit=150,
-                            labelOverlap=False
-                        )),
-                    y=alt.Y(
-                        "Importance:Q",
-                        title="Importance Strength"),
-                    # Use the opposite color to the main prediction
-                    color=alt.value("red") if main_prediction == 0 else alt.value("dodgerblue"),
-                    tooltip=["Feature",
-                            alt.Tooltip("Importance", title="Word Importance")]
-                ).properties(
-                    title=opposite_title,
-                    height=400,
-                    width=500
-                ).configure_axis(
-                    labelFontSize=14,
-                    titleFontSize=16
-                )
-            
-                # Display the opposite word features chart
-                col1.altair_chart(opposite_word_features_chart, use_container_width=True)
+        # Create opposite prediction features chart
+        if len(opposite_prediction_top_word_features_df) > 0: # Check if there are opposite class word features to avoid errors for robust code
+            opposite_word_features_chart = alt.Chart(opposite_prediction_top_word_features_df).mark_bar().encode(
+                x=alt.X(
+                    "Feature:N",
+                    sort=alt.EncodingSortField(
+                        field="Importance",
+                        order="descending"
+                    ),
+                    title="Word Feature",
+                    axis=alt.Axis(
+                        labelAngle=-45,
+                        labelFontSize=14,
+                        labelLimit=150,
+                        labelOverlap=False
+                    )),
+                y=alt.Y(
+                    "Importance:Q",
+                    title="Importance Strength"),
+                # Use the opposite color to the main prediction
+                color=alt.value("red") if main_prediction == 0 else alt.value("dodgerblue"),
+                tooltip=["Feature",
+                        alt.Tooltip("Importance", title="Word Importance")]
+            ).properties(
+                title=opposite_title,
+                height=400,
+                width=500
+            ).configure_axis(
+                labelFontSize=14,
+                titleFontSize=16
+            )
+        
+            # Display the opposite word features chart
+            col1.altair_chart(opposite_word_features_chart, use_container_width=True)
 
-            else:
-                st.warning("No significant word features pushing the classifier away from the main prediction have been found.")
+        else:
+            st.warning("No significant word features pushing the classifier away from the main prediction have been found.")
         
     # Second column showing bar chart with importance scores for non-word features
     with col2:
