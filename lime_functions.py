@@ -940,14 +940,14 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
 
         # Set title based on whether main prediction is real or fake news
         if main_prediction == 0:  # Real news
-            title = "Top Words pushing prediction towards REAL NEWS"
+            title = "Words pushing towards REAL NEWS"
         else: # Main prediction is fake news
-            title = "Top Words pushing prediction towards FAKE NEWS"
+            title = "Words pushing towards FAKE NEWS"
 
         if main_prediction == 0:  # Real news
-            opposite_title = "Top Words pushing prediction towards FAKE NEWS"
+            opposite_title = "Words pushing towards FAKE NEWS"
         else: # Main prediction is fake news
-            opposite_title = "Top Words pushing prediction towards REAL NEWS"
+            opposite_title = "Words pushing towards REAL NEWS"
 
         # Extract the top ten features of the main prediction filtered DataFrame
         main_prediction_top_word_features_df =  main_prediction_filtered_word_features_df.nlargest(10, "Importance")
@@ -969,7 +969,6 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
                         field="Importance",  # Sort in desc. orer by abs importance
                         order="descending" 
                     ),
-                    title="Word Feature",
                     axis=alt.Axis(
                         labelAngle=-45,  # Uses a rotation of 45 degrees to read labels better
                         labelFontSize=14,
