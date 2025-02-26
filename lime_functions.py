@@ -919,6 +919,23 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
         # Extracts the top ten features of the words pushing towards the opposing prediction filtered DataFrame
         opposite_prediction_top_word_features_df = opposite_prediction_filtered_word_features_df.nlargest(10, "Importance")
 
+        # Calculate the maximum importance value for pro-prediction word features and opposing-prediction word features
+        # This is very important for scaling the y-axis on the two charts
+        max_importance_score = 0
+
+        # Calculates the max important score from the word features pushing towards the main prediction
+        if len(main_prediction_top_word_features_df) > 0:
+            max_importance_score = max(max_importance_score, main_prediction_top_word_features_df["Importance"].max()) # Updates max score if word importance max greater than 0
+
+        # Calculates the ABSOLUTE max importance score from the opposing word feature scores (as they are negative)
+        if len(opposite_prediction_filtered_word_features_df) > 0:
+            opposite_max = opposite_prediction_filtered_word_features_df["Importance"].abs().max()
+            # Update the max score if a greater value is found from the opposing word features
+            max_importance_score = max(max_importance_score, opposite_max)
+
+        # Adds a small offset to the top of the chart to make it look neater
+        max_importance_score = max_importance_score * 1.1
+
         # Checks that there ARE important word features in the main prediction DataFrame
         if len(main_prediction_top_word_features_df) > 0:
             # Creates a bar chart for most important text features using the Altair visualization library
@@ -944,7 +961,10 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
                 # Plots the importance scores on y-axis 
                 y=alt.Y( 
                         "Importance:Q", # Q means numerical value for Altair
-                        title="Importance Strength"),
+                        title="Importance Strength",
+                        # Reference: https://altair-viz.github.io/user_guide/generated/core/altair.Scale.html
+                        scale=alt.Scale(domain=[0, max_importance_score]) # Set fixed scale for ease of comparison
+                        ),
                 # Sets blue bars for real news prediction, red for fake 
                 color=alt.value("dodgerblue") if main_prediction == 0 else alt.value("red"), 
                 # Adds "tooltips": explanations that appear when hovering above the bar
@@ -994,7 +1014,9 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
                     )),
                 y=alt.Y( # y-axis = word importance score (quantitative, number)
                     "Importance:Q",
-                    title="Importance Strength"),
+                    title="Importance Strength",
+                    scale=alt.Scale(domain=[0, max_importance_score])
+                    ),
                 # Uses the opposite color to the main prediction
                 color=alt.value("red") if main_prediction == 0 else alt.value("dodgerblue"),
                 tooltip=["Feature",
