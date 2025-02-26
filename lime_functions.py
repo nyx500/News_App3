@@ -832,7 +832,7 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
     # Write probabilities of being real and fake news
     container.write("**Confidence Scores:**")
 
-    # Set color and boldness with markdown and HTML depending on the predicted label
+    # Sets the color and boldness with markdown and HTML depending on the predicted label
     if main_prediction_as_text == "Real News":
         container.markdown(f"- <span style='color:dodgerblue; font-weight: bold'>Real News: {probs[0]:.2%}</span>", unsafe_allow_html=True)
         container.markdown(f"- <span style='color:red'>Fake News: {probs[1]:.2%}</span>", unsafe_allow_html=True)
@@ -842,7 +842,7 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
 
 
     
-    # Display the highlighted text title using Markdown and inline styling to adjust size and padding
+    # Displays the highlighted text title using Markdown and inline CSS styling to adjust the size and padding
     st.markdown("""
         <div style='padding-top: 20px; padding-bottom:10px; font-size: 24px; font-weight: bold;'>
             Highlighted Text Section
@@ -850,7 +850,7 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
         """, unsafe_allow_html=True  # Reference: https://discuss.streamlit.io/t/unsafe-allow-html-in-code-block/54093
     )
     
-    # Display the explanation for the highlighted text
+    # Displays the explanation for what the color coding means in the highlighted text
     st.markdown("""
         <div style='padding-bottom:12px; padding-top: 12px; font-size: 18px; font-style: italic;'>
         Highlighted text shows the words (features) pushing the prediction towards <span style="color: dodgerblue; font-weight: bold;">real news</span> in blue 
@@ -858,17 +858,19 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
         </div>
     """, unsafe_allow_html=True)
     
+   
+    # "Insert a multi-element container that can be expanded/collapsed."
     # Reference: https://docs.streamlit.io/develop/api-reference/layout/st.expander
-    # Ïnsert a multi-element container that can be expanded/collapsed.""
     with st.expander("View Highlighted Text:"):
-        # Format the expandable scroll-box to show highlighted (blue=real, red=fake) text outputted by LIME Explainer using inline CSS to allow y-scrolling and padding
+        # Formats the expandable scroll-box to show highlighted (blue=real, red=fake) text outputted by LIME Explainer using
+        # inline CSS to allow y-scrolling and padding
         st.markdown("""
             <div style='height: 450px; overflow-y: scroll; border: 2px solid #d3d3d3; padding: 12px;'>
                 {}
             </div>  
             """.format(explanation_dict["highlighted_text"]), unsafe_allow_html=True)
         
-    # Set more padding between the two charts
+    # Adds more padding between the two charts
     st.markdown("""
     <style>
         .stColumn > div {
@@ -877,151 +879,160 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
     </style>
     """, unsafe_allow_html=True)
     
-    # Title for bar charts for feature importance analysis
+    # Adds title for bar charts for feature importance analysis
     container.subheader("Feature Importance Analysis")
 
-    # Create two columns for side-by-side bar charts for word features on the left and extra features on the right
+    # Creates two columns for side-by-side bar charts for word features on the left and extra features on the right
     col1, col2 = container.columns(2)
     
     # First column: word features
     with col1:
         col1.write("### Top Word Features")
 
-        # Gets the top text-based features identified by LIME into a DataFrame for easier sorting and filtering
+        # Extracts the top text-based features identified by LIME into a DataFrame for easier sorting and filtering
         word_features_df = pd.DataFrame(
             explanation_dict["word_features_list"],
             columns=["Feature", "Importance"]
         )
 
-        # Filter to show the words that pushed the classifier towards the main prediction (positive word scores)
+        # Applies a filter to select ONLY the words that pushed the classifier towards the main prediction (positive word scores)
         main_prediction_filtered_word_features_df = word_features_df[word_features_df["Importance"] > 0].copy()
-        # Get words pushing towards the opposite class
+
+        # Applies a filter to select ONLY words pushing towards the opposite class (negative word scores)
         opposite_prediction_filtered_word_features_df = word_features_df[word_features_df["Importance"] < 0].copy()
 
-        # Set title based on whether main prediction is real or fake news
+        # Sets the main prediction words graphs' titles based on whether main prediction is real or fake news
         if main_prediction == 0:  # Real news
             title = "Words pushing towards REAL NEWS"
         else: # Main prediction is fake news
             title = "Words pushing towards FAKE NEWS"
-
+        
+        # Sets the opposing prediction words graphs' titles based on whether main prediction is real or fake news
         if main_prediction == 0:  # Real news
             opposite_title = "Words pushing towards FAKE NEWS"
         else: # Main prediction is fake news
             opposite_title = "Words pushing towards REAL NEWS"
 
-        # Extract the top ten features of the main prediction filtered DataFrame
+        # Extracts the top ten features of the words pushing towards the main prediction filtered DataFrame
         main_prediction_top_word_features_df =  main_prediction_filtered_word_features_df.nlargest(10, "Importance")
-        # Extract the top ten features of the opposite prediction filtered DataFrame
+
+        # Extracts the top ten features of the words pushing towards the opposing prediction filtered DataFrame
         opposite_prediction_top_word_features_df = opposite_prediction_filtered_word_features_df.nlargest(10, "Importance")
 
-        # Check there ARE word features that were found to be important for the main class prediction
-        if len(word_features_df) > 0:
-            # Create bar chart for most important text features using the Altair visualization library using text_features_df
+        # Checks that there ARE important word features in the main prediction DataFrame
+        if len(main_prediction_top_word_features_df) > 0:
+            # Creates a bar chart for most important text features using the Altair visualization library
             # Q = specifies this feature/value is quantitative, N = specifies it is nominal/categorical
-            # sort="-x" = sort features by x-value (importance score)
             # Reference: https://altair-viz.github.io/user_guide/generated/toplevel/altair.Chart.html#altair.Chart
+            # Reference for sorting documentation: https://altair-viz.github.io/user_guide/generated/core/altair.EncodingSortField.html
             # How to create charts in Streamlit Reference: https://www.projectpro.io/recipes/display-charts-altair-library-streamlit
-            word_features_chart = alt.Chart(main_prediction_top_word_features_df).mark_bar().encode( # Use mark_bar to create bar_chart. Reference: https://altair-viz.github.io/user_guide/marks/index.html
+            # Use mark_bar to create bar_chart. Reference: https://altair-viz.github.io/user_guide/marks/index.html
+            word_features_chart = alt.Chart(main_prediction_top_word_features_df).mark_bar().encode( 
                 # Displays the categorical features (:N)/words on the x-axis
                 x=alt.X(
                     "Feature:N", # N = categorical variable
                     sort=alt.EncodingSortField(
-                        field="Importance",  # Sort in desc. orer by abs importance
+                        field="Importance",  # Sort by word importance (for main pred, importance goes from pos value to 0)
                         order="descending" 
                     ),
                     title="Word Feature",
                     axis=alt.Axis(
-                        labelAngle=-45,  # Uses a rotation of 45 degrees to read labels better
-                        labelFontSize=14,
-                        labelLimit=150,  # Increase label width limit
+                        labelAngle=-45,  # Uses a rotation of 45 degrees for users to be able to read labels better
+                        labelLimit=150,  # Maximum allowed pixel width of axis tick labels. Reference: https://altair-viz.github.io/user_guide/generated/core/altair.Axis.html
                         labelOverlap=False  # Prevent label overlap
                     )),
-                # Plot importance score on y-axis 
+                # Plots the importance scores on y-axis 
                 y=alt.Y( 
                         "Importance:Q", # Q means numerical value for Altair
                         title="Importance Strength"),
-                # Set blue bars for real news prediction, red for fake 
+                # Sets blue bars for real news prediction, red for fake 
                 color=alt.value("dodgerblue") if main_prediction == 0 else alt.value("red"), 
-                # Add "tooltips": explanations that appear when hovering above the bar
+                # Adds "tooltips": explanations that appear when hovering above the bar
                 tooltip=["Feature",
                         alt.Tooltip("Importance", title="Word Importance")]
             ).properties(
-                title=title,
+                title=title, # Set title and chart dimensions
                 height=400,
                 width=500
-            ).configure_axis(
+            ).configure_axis( # Reference: https://altair-viz.github.io/altair-viz-v4/user_guide/configuration.html
                 labelFontSize=14,
                 titleFontSize=16
             )
 
-            # Display the word features chart
+            # Displays the word features pushing towards the main prediction chart
             col1.altair_chart(word_features_chart , use_container_width=True)
         else:
+            # If no important words have been found for pushing towards the main prediction, then print error message
             st.warning("No significant word features pushing the classifier towards the main prediction have been found.")
 
 
-        # Create opposite prediction features chart
-        if len(opposite_prediction_top_word_features_df) > 0: # Check if there are opposite class word features to avoid errors for robust code
+        # Creates the word features chart for words pushing towards the opposite (lower prob) prediction
+        if len(opposite_prediction_top_word_features_df) > 0:
             
-            # Modify original DF to get absolute importance scores
+            # Modifies the original DF to get absolute importance scores for easier plotting in desc order from 0 to high
             opposite_df_for_chart = opposite_prediction_top_word_features_df.copy()
-            # Get abs importance scores, for easier plotting in desc order going down from left to rigth on the bar chart
+
+            # Applies abs func to whoel Importance col
             opposite_df_for_chart["Importance"] = opposite_df_for_chart["Importance"].abs()
-            # Sort the importance values in desc order
+
+            # Sorts the (now absolute) importance values in desc order
             opposite_df_for_chart = opposite_df_for_chart.sort_values("Importance", ascending=False)
 
+            # Creates the chart with the sorted abs values pushing towards the opposite prediction
             opposite_word_features_chart = alt.Chart(opposite_df_for_chart).mark_bar().encode(
                 x=alt.X(
-                    "Feature:N",
+                    "Feature:N", # x-axis = categorical value (word feature)
                     sort=alt.EncodingSortField(
                         field="Importance",
                         order="descending"
                     ),
                     title="Word Feature",
                     axis=alt.Axis(
-                        labelAngle=-45,
-                        labelFontSize=14,
-                        labelLimit=150,
-                        labelOverlap=False
+                        labelAngle=-45, # Rotates labels for readability
+                        labelLimit=150, # Set label length to 150 pixels
+                        labelOverlap=False # Don't let labels overlap
                     )),
-                y=alt.Y(
+                y=alt.Y( # y-axis = word importance score (quantitative, number)
                     "Importance:Q",
                     title="Importance Strength"),
-                # Use the opposite color to the main prediction
+                # Uses the opposite color to the main prediction
                 color=alt.value("red") if main_prediction == 0 else alt.value("dodgerblue"),
                 tooltip=["Feature",
                         alt.Tooltip("Importance", title="Word Importance")]
             ).properties(
-                title=opposite_title,
+                title=opposite_title, # Adds title and dimensions
                 height=400,
                 width=500
             ).configure_axis(
-                labelFontSize=14,
+                labelFontSize=14, # Sets label and title font szzies
                 titleFontSize=16
             )
         
-            # Display the opposite word features chart
+            # Displays the opposite word features chart
             col1.altair_chart(opposite_word_features_chart, use_container_width=True)
 
         else:
+
+            # Prints an error message if no significant words pushing towards the opposing prediction are found
             st.warning("No significant word features pushing the classifier away from the main prediction have been found.")
         
-    # Second column showing bar chart with importance scores for non-word features
+    # The second column is for displaying a bar chart with the importance scores for non-word features
     with col2:
 
         col2.write("### Top Extra Semantic and Linguistic Features")
         
-        # Create a DataFrame from the extra features list returned by the LIME explainer function
+        # Creates a DataFrame from the extra features list returned by the LIME explainer function
         extra_features_df = pd.DataFrame(
             explanation_dict["extra_features_list"],
             columns=["Feature", "Importance"]
         )
         
-        # Sort the features by their absolute importance
-        extra_features_df["Absolute Importance"] = extra_features_df["Importance"].abs() # Create new absolute importance column first
+        # Sorts the features by their absolute importance for easier plotting
+        extra_features_df["Absolute Importance"] = extra_features_df["Importance"].abs()
+        # Extracts 10 largest features (all of the features) by absolute importance
         extra_features_df = extra_features_df.nlargest(10, "Absolute Importance")
         
-        # Add the original feature name before mapping to the explanations
+        # Adds the original feature name, not the underscored programmatic title, before mapping to the explanation labels on the chart
         extra_features_df["Original Feature"] = extra_features_df["Feature"]
         
         # Map feature column variables to user-readable strings 
@@ -1041,37 +1052,37 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
         # Maps the features to their more readable names listed in the dictionary above
         extra_features_df["Feature"] = extra_features_df["Feature"].map(feature_name_mapping)
         
-        # Maps the explanations to their natural language explanation for users
+        # Maps the explanations to their globally-stored natural language explanation for users
         extra_features_df["Explanation"] = extra_features_df["Original Feature"].map(FEATURE_EXPLANATIONS)
         
-        # Creates the bar chart with enhanced tooltips for explaining what features mean to users when they hover over a bar
+        # Creates a bar chart with more tooltips for explaining what features mean to users when they hover over a bar
         extra_features_chart = alt.Chart(extra_features_df).mark_bar().encode(
             x=alt.X("Importance:Q", title="Importance Strength"),
             y=alt.Y("Feature:N",
                     sort=alt.EncodingSortField(
-                        field="Absolute Importance", # Sorts features by ABSOLUTE value of importance
+                        field="Absolute Importance", # Sorts features by ABSOLUTE value of importance in desc order
                         order="descending"
                     ),
                     axis=alt.Axis(
-                        labelFontSize=14 # Sets feature labels font size
+                        labelFontSize=14 # Sets the feature labels font size
                     )), 
                 color=alt.condition(
                 # Checks if the importance score pushes in the same direction as the predicted class
                 alt.datum.Importance > 0,
-                alt.value("dodgerblue") if main_prediction == 0 else alt.value("red"), 
-                alt.value("red") if main_prediction == 0 else alt.value("dodgerblue")
+                alt.value("dodgerblue") if main_prediction == 0 else alt.value("red"), # If same dir as pred class
+                alt.value("red") if main_prediction == 0 else alt.value("dodgerblue") # If NOT same dir as pred class
             ),
             tooltip=["Feature", "Importance", "Explanation"]  # Add tooltip showing feature and importance if user hovers over the bar 
         ).properties(
-            title="Top 10 Extra Features",
+            title="Top 10 Extra Features", # Sets title and dimensions
             height=400,
             width=500
-        ) # Add title and size
+        )
         
-        # Show the extra features chart in the column
+        # Displays the extra features chart in the second column
         col2.altair_chart(extra_features_chart, use_container_width=True) # Make span across whole container
         
-        # Add a legend explanation for the color-coded bar charts and highlighted text
+        # Adds a legend explanation for the color-coded bar charts and highlighted text
         container.markdown(f"""
             **Legend:**
             - 🔵 **Blue bars**: Features pushing towards real news classification
@@ -1084,35 +1095,32 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
             please click below to expand the explanations.
         """)
         
-                
-        # Extract the actual feature values for the single text news prediction
-        single_text_df = feature_extractor.extractFeaturesForSingleText(news_text)
-        
+        # Adds an expander outlining the feature importance scores in more detail
         with col2.expander("*View More Detailed Feature Score Information*"):
             
-            # Iterate over the extra features to explain each one
+            # Iterates over the extra features to explain each one
             for index, row in extra_features_df.iterrows():
-                # Determines its color based on its importance value: red if pushing towards positive/fake news, else blue
-                # Maps the importance score to string description
-                if row["Importance"] > 0:
-                    if main_prediction == 0:
+
+                # Determines the importance color and explanation based on the prediction and score value
+                if row["Importance"] > 0: # Same direction of word importance as main prediction
+                    if main_prediction == 0: # Main pred AND score is real news
                         importance_color = "dodgerblue"
                         importance_explanation = "(pushing towards real news)"
                     else:
-                        importance_color = "red"
+                        importance_color = "red" # Main pred AND score are fake news
                         importance_explanation =  "(pushing towards fake news)"    
-                elif row["Importance"] < 0:
-                    if main_prediction == 0:
+                elif row["Importance"] < 0: # Different dir of word importance as main pred
+                    if main_prediction == 0: # Main pred is real BUT word pushes towards fake news
                         importance_color = "red"
                         importance_explanation = "(pushing towards fake news)"
-                    else:
+                    else: # Main pred is fake BUT word pushes towards real news
                         importance_color = "dodgerblue"
                         importance_explanation =  "(pushing towards real news)"    
                 else:
                     importance_color = "grey"
                     importance_explanation =  "Neutral - there was no significant impact on prediction."  
                 
-                # Add some text explaining what exactly this engineered feature and its score means for the prediction
+                # Adds explanation from FEATURE_EXPLANATIONS about the feature and main patterns associated with it in the training data
                 container.markdown(f"""
                     **{row["Feature"]}**
                     - Impact on Classification: <span style='color:{importance_color}'>{row["Importance"]:.4f} {importance_explanation}</span>
