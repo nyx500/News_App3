@@ -214,12 +214,26 @@ with tabs[1]:
 with tabs[2]:
     st.header("Key Patterns in the Training Data: Real (Blue) vs Fake (Red) News")
     st.write("These visualizations show the main trends and patterns between real and fake news articles in the training data.")
+
+    # Adds space between graphs
+    st.write("") 
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
     
+
     # Capital Letter Usage
     st.subheader("Capital Letter Usage")
     caps_img = plt.imread("all_four_datasets_capitals_bar_chart_real_vs_fake.png")
     st.image(caps_img, caption="Mean number of capital letters in real vs fake news", use_container_width=True)
     st.write("Real news tended to use more capital letters, perhaps due to including more proper nouns and technical acronyms.")
+
+    st.write("") 
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
 
     # Exclamation Point Usage
     st.subheader("Exclamation Point Usage")
@@ -227,11 +241,35 @@ with tabs[2]:
     st.image(exclaim_img, caption="Frequency of exclamation points in real vs fake news", use_container_width=True)
     st.write("Fake news tends to use more exclamation points, possibly suggesting a more sensational and inflammatory writing.")
 
+    st.write("") 
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+
     # Third-Person Pronoun Usage
     st.subheader("Third Person Pronoun Usage")
     pronouns_img = plt.imread("all_four_datasets_third_person_pronouns_bar_chart_real_vs_fake.png")
     st.image(pronouns_img, caption="Frequency of third-person pronouns in real vs fake news", use_container_width=True)
     st.write("Fake news often uses more third-person pronouns (e.g him, his, her), which could indciate a more 'storytelling' kind of narrative style.")
+
+    st.write("") 
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+
+    # Noun-to-Verb Ratio
+    st.subheader("Noun-to-Verb Ratio")
+    emotions_img = plt.imread("all_four_datasets_noun_to_verb_ratio_bar_chart_real_vs_fake.png")
+    st.image(emotions_img, caption="Noun-to-Verb Ratio: Real vs Fake News", use_container_width=True)
+    st.write("In the training data, real news tended to have slightly more nouns than verbs than fake news.")
+
+    st.write("") 
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
     
     # Emotion counts
     st.subheader("Emotional Content using NRC Emotion Lexicon")
@@ -239,11 +277,23 @@ with tabs[2]:
     st.image(emotions_img, caption="Emotional content comparison between real and fake news", use_container_width=True)
     st.write("Fake news (in this dataset) often showed lower positive emotion scores and fewer trust-based emotion words than real news.")
 
+    st.write("") 
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+
     # Named Entity PERSON counts
     st.subheader("Named Entity PERSON Frequency Counts")
     emotions_img = plt.imread("all_four_datasets_person_named_entities_bar_chart_real_vs_fake.png")
     st.image(emotions_img, caption="PERSON named entity count for fake vs real news", use_container_width=True)
     st.write("Fake news (in this dataset) often contained more references to PERSON named entities than real news.")
+
+    st.write("") 
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
 
     # Named Entity CARDINAL counts
     st.subheader("Named Entity CARDINAL (i.e. numbers) Frequency Counts")
@@ -251,28 +301,61 @@ with tabs[2]:
     st.image(emotions_img, caption="CARDINAL (numbers) named entity count for fake vs real news", use_container_width=True)
     st.write("Fake news tended to contain less numerical data (i.e. lower CARDINAL named entity frequencies) than real news.")
 
+    st.write("") 
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+
+    # Flesch-Kincaid Readability Grade
+    st.subheader("Flesch-Kincaid U.S. Readability Grade Level")
+    emotions_img = plt.imread("all_four_datasets_flesch_kincaid_readability_bar_chart_real_vs_fake.png")
+    st.image(emotions_img, caption="Flesch-Kincaid avg. U.S. grade level (readability) for fake vs real news", use_container_width=True)
+    st.write("Real news tended to have a slightly higher U.S. grade level, indicating more complex language, than fake news.")
+
+    st.write("") 
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+
+    # Difficult-Words score
+    st.subheader("Difficult Words Score")
+    emotions_img = plt.imread("all_four_datasets_difficult_words_score_bar_chart_real_vs_fake.png")
+    st.image(emotions_img, caption="Normalized 'Difficult Words' scores for fake vs real news", use_container_width=True)
+    st.write("Real news tended to contain more complex words than fake news.")
+
+    st.write("") 
+    st.write("")
+    st.write("")
+    st.write("")
+    st.write("")
+
 
     # Add an expander with more detailed explanation
     with st.expander("📊 Details about these visualizations"):
-        st.write("""
+        st.markdown("""
         These visualizations are based on a detailed data analysis of four benchmark fake news datasets used for training the model:
         WELFake, Constraint (COVID-19 data), PolitiFact (political news), and GossipCop (entertainment and celebrity news). 
         The charts display NORMALIZED frequencies, e.g. for exclamation marks and capital use: the 
         raw frequencies have been divided by the text length (in words) to account for the differences in the lengths of the different news texts.
         
-        Some of the Main Differences in Real vs Fake News Based on the Data Analysis:
+        ### Some of the Main Differences in Real vs Fake News Based on the Data Analysis:
         
-        - Capital letters: Higher frequencies in real news, perhaps to greater usage of proper nouns and techical acronyms
-        - Third-person pronouns: Much more frequent in fake news based on these datasets, suggesting storytelling-like narrative style and person-focused content
-        - Exclamation points: More frequent in fake news, pointing towards a sensational inflammatory style
-        - Emotional content: The words used in fake news tended to have much less positive emotional connotations and reduced trust scores
+        - **Capital letters:** Higher frequencies in real news, perhaps to greater usage of proper nouns and techical acronyms
+        - **Third-person pronouns:** Much more frequent in fake news based on these datasets, suggesting storytelling-like narrative style and person-focused content
+        - **Exclamation points:** More frequent in fake news, pointing towards a sensational inflammatory style
+        - **Emotion features:** The words used in fake news tended to have much less positive emotional connotations and reduced trust scores
+        - **Named-entity features:** while fake news contained more PERSON references, real news tended to contain more CARDINAL (number) references
+                 to quantitative entities
+        - **Readability scores:** on the whole, real news tended to contain more complex words and language than fake news
         
         Disclaimer: These patterns were specific to THESE four datasets, but they should be considered in combination with other features
         (i.e. the word feature importance), as well as remembering that more recent fake news may exhibit different trends, particularly
         given the rapid analysis of propaganda and disinformation strategies
         
-        More feature analysis coming soon!
         """)
+
 
 # Fourth tab: Word Clouds
 with tabs[3]:
@@ -360,10 +443,14 @@ with tabs[4]:
         """)
         
     st.subheader("😐 Disclaimer: Limitations of the Model")
-    st.write("""
+    st.markdown("""
         Please bear in mind that strategies for producing fake news are always evolving rapidly, particularly with the rise of generative AI.
         The patterns highlighted here are based on THIS specific training data from four well-known fake news datasets; however,
         they may not apply to newer forms of disinformation!  As a result, it is always strongly recommended to
         also use fact-checking and claim-busting websites to check out whether the sources of information are legitimate.
-    """)
+        <br>
+        <br>
+        The model used to classify fake news here obtained 93% accuracy and F1-score on the training data composed of four different
+        dataset from different domains, therefore its predictions are not perfect.
+    """, unsafe_allow_html=True)
     
