@@ -72,6 +72,22 @@ FEATURE_EXPLANATIONS = {
         Greater capital letter usage was associated more with real news in training data."""
 }
 
+ # Defines a reusable warning message about how to use the app properly to users for the 'How it Works' tab
+warning_message = """
+**Some Guidance on App Usage:** \n 
+- The LIME explanation algorithm used to determine word importance scores functions by removing random words from the text, and then calculating the impact this had on the final prediction.\n  
+- However, the bar charts showing word features pushing towards either the main prediction or against it can carry little meaning **out of context**.\n  
+- Therefore, it is recommended to also inspect how the word appears in the entire **highlighted text**. E.g. the word 'kind' can mean sympathetic and helpful,  
+but it can also be part of the colloquial phrase 'kind of' and thus carry a different meaning!  
+- **Please remember that the final probabilities are a result of interactions between different features, and not the result of one feature alone.** \n 
+"""
+
+# Another warning msg for the first 2 (URL and text input) tabls
+warning_message_for_first_two_tabs = """
+        **Please remember that the final probabilities are a result of interactions between different features, and not the result of one feature alone.**
+        \n Go to the *How it Works* tab for a more detailed explanation of how to interpret the word important scores.
+"""
+
 # Loads the trained fastText model
 @st.cache_resource # Save it for quicker loading next time
 def load_fasttext_model():
@@ -147,7 +163,8 @@ with st.container():
         
         # Explains slider and how feature importance works to users
         st.write("The more perturbed samples you choose, the more accurate the explanation will be, but it will take longer to output.")
-        st.warning("**Please remember that the final probabilities are a results of interactions between different features, and not the result of one feature alone.**", icon="🚩")
+        # Displays a brief warning message about how to interpret word features scores
+        st.warning(warning_message_for_first_two_tabs, icon='🚩')
         
         # Creates interactive button to classify text and descriptor for this specific tab
         if st.button("Classify", key="classify_button_url"): # If URL classificationbutton pressed...
@@ -211,7 +228,8 @@ with st.container():
         
         # Explains the slider settings and how feature importance works to users
         st.write("The more perturbed samples you choose, the more accurate the explanation will be, but it will take longer to compute.")
-        st.warning("**Please remember that the final probabilities are a results of interactions between different features, and not the result of one feature alone.**", icon="🚩")
+        # Displays the same warning message as in the first tab
+        st.warning(warning_message_for_first_two_tabs, icon='🚩')
         
         # If user presses the classifier button on this tab, then proceed
         if st.button("Classify", key="classify_button_text"):
@@ -481,6 +499,9 @@ with st.container():
             - Text readability and complexity can also help the classifier distinguish between real and fake news,
             as fake news tends to be easier to digest and less challenging.
             """)
+
+        # Places the warning message inside a Streamlit warning container
+        st.warning(warning_message, icon='🚩')
             
         st.subheader("😐 Disclaimer: Limitations of the Model")
         st.markdown("""
