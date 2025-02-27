@@ -77,8 +77,7 @@ warning_message = """
 **Some Guidance on App Usage:** \n 
 - The LIME explanation algorithm used to determine word importance scores functions by removing random words from the text, and then calculating the impact this had on the final prediction.\n  
 - However, the bar charts showing word features pushing towards either the main prediction or against it can carry little meaning **out of context**.\n  
-- Therefore, it is recommended to also inspect how the word appears in the entire **highlighted text**. E.g. the word 'kind' can mean sympathetic and helpful,  
-but it can also be part of the colloquial phrase 'kind of' and thus carry a different meaning!  
+- Therefore, it is recommended to also inspect how the word appears in the entire **highlighted text**. E.g. the word 'kind' can mean sympathetic and helpful, but it can also be part of the colloquial phrase 'kind of' and thus carry a different meaning!  
 - **Please remember that the final probabilities are a result of interactions between different features, and not the result of one feature alone.** \n 
 """
 
