@@ -526,7 +526,7 @@ def explainPredictionWithLIME(
             # Appends the single text's features to the list storing all perturbed features for later stacking
             perturbed_feature_arrays.append(perturbed_features)
         
-        # Stacks all the rows of features into a single numpy features matrix (2D array)
+        # Stacks the list of rows of features into a single numpy features matrix (2D array)
         perturbed_feature_arrays = np.vstack(perturbed_feature_arrays)
         
         # Uses the trained model to output the probabilities for all perturbed samples
