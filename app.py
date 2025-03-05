@@ -27,22 +27,22 @@ from lime_functions import BasicFeatureExtractor, explainPredictionWithLIME, dis
 # Maps DataFrame extra feature names to explanations about their tendencies + patterns in train data
 FEATURE_EXPLANATIONS = {
     "exclamation_point_frequency": 
-        """Normalized exclamation marks frequency counts. Higher frequencies of exclamation marks in text 
+        """Normalized exclamation marks frequency counts. Higher raw frequencies of exclamation marks in text 
         can indicate more emotional or sensational writing, and thus were more strongly associated 
         with fake news in the training data.""",
     
     "third_person_pronoun_frequency": 
-        """Normalized frequency of third-person pronouns (he, she, they, etc.). Higher scores might indicate a more story-like 
+        """Normalized frequency of third-person pronouns (he, she, they, etc.). Higher raw scores might indicate a more story-like 
         narrative style. Therefore, the more positive the original score scores, the more likely the text was to be fake news.""",
     
     "noun_to_verb_ratio": 
-        """Ratio of nouns to verbs. Higher values (more nouns) suggest more descriptive rather than action-focused writing. 
+        """Ratio of nouns to verbs. Higher raw values (more nouns) suggest more descriptive rather than action-focused writing. 
         Higher scores (more nouns to verbs) were thus associated more with real news than fake news in training data. 
         Negative values, with more verbs, were associated with fake news more than real news, perhaps due to contributing 
         towards a more fast-paced, action-based style.""",
     
     "cardinal_named_entity_frequency": 
-        """Normalized frequency of numbers and quantities. Higher scores indicate a higher level of specific details, and they were
+        """Normalized frequency of numbers and quantities. Higher raw scores indicate a higher level of specific details, and they were
         more associated with real news in the training data. Fake news contained less numerical facts on the whole.""",
     
     "person_named_entity_frequency": 
@@ -51,24 +51,24 @@ FEATURE_EXPLANATIONS = {
         was closely tied to attempts to harm a person's reputation through different propaganda campaigns.""",
     
     "nrc_positive_emotion_score": 
-        """Measure of the positive emotional content using the NRC lexicon. Higher values indicate more words associated with positive emotions, 
+        """Measure of the positive emotional content using the NRC lexicon. Higher raw values indicate more words associated with positive emotions, 
         and a more positive tone was more closely associated more with real news than fake news in the training data.""",
     
     "nrc_trust_emotion_score": 
-        """The normalized count of trust-related words using NRC lexicon. Higher values suggest more credibility-focused language, 
+        """The normalized count of trust-related words using NRC lexicon. Higher raw values suggest more credibility-focused language, 
         and were more associated with real news than fake news. Fake news contained considerably lower scores for trust-related words
         in the training data.""",
     
     "flesch_kincaid_readability_score": 
-        """U.S. grade level required to understand the text. A higher score indicates more complex writing, which was 
+        """U.S. grade level required to understand the text. A higher raw score indicates more complex writing, which was 
         associated more with real news in the training data, while fake news in general used simpler language.""",
     
     "difficult_words_readability_score": 
-        """Count of complex words not included in the Dall-Chall word list. Higher values indicate more sophisticated vocabulary, 
+        """Count of complex words not included in the Dall-Chall word list. Higher raw values indicate more sophisticated vocabulary, 
         and this was associated more with real news in the training data.""",
     
     "capital_letter_frequency": 
-        """Normalized frequency of capital letters. Higher values might indicate more emphasis and acronyms. 
+        """Normalized frequency of capital letters. Higher raw values might indicate more emphasis and acronyms. 
         Greater capital letter usage was associated more with real news in training data."""
 }
 

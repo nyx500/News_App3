@@ -1114,7 +1114,9 @@ def displayAnalysisResults(explanation_dict, container, news_text, feature_extra
             in the news text pushes the classifier towards a REAL or FAKE prediction.
             For more details about these features' distributions and patterns
             in the real vs fake training data this model was trained on,
-            please click below to expand the explanations.
+            please click below to expand the explanations, or go to the 'Key Pattern Visualizations''
+            tab to view charts showing the global frequency counts for these features in 
+            the global training daa.
         """)
         
         # Adds an expander outlining the feature importance scores in more detail
